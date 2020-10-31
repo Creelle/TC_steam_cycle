@@ -15,6 +15,8 @@ Mm_N2 = 0.028;#kg/mol
 conc_O2 = 0.21;# 21% in molar
 conc_N2 = 0.79;# 79% in molar
 
+#hello
+
 def air_mixture(T):#kJ/kg/K
     Mm_a = conc_O2 * Mm_O2 + conc_N2 * Mm_N2;
     m_O2 = (conc_O2*Mm_O2)/Mm_a;# mass proportion of O2
