@@ -79,15 +79,59 @@ def ST(ST_inputs):
     Pe = arg_in.Pe;
     if Pe ==-1.:
         Pe = 250e3;#250 kWe
+    nsout = arg_in.nsout;
+    if nsout ==-1.:
+        nsout = 1;#15°C
+    reheat = arg_in.reheat
+    if reheat == -1:
+        reheat = 1.;# Number of reheating
+    T_max = arg_in.T_max;
+    if T_max == -1.:
+        T_max = 500+273.15; #K
+    T_cond_out = arg_in.T_cond_out;
+    if T_cond_out == -1.:
+        T_cond_out = 30+273.15 #K
+    p3_hp = arg_in.p3_hp;
+    if p3_hp == -1.:
+        p3_hp =40 #bar
+    eta_mec = arg_in.eta_mec;
+    if eta_mec == -1.:
+        eta_mec = 0.95 #[-]
+
+    comb = arg_in.combustion
+    if comb.Tmax == -1:
+        comb.Tmax = 1400#K
+    if comb.Lambda == -1:
+        comb.Lambda = 2;
+    if comb.x == -1:
+        comb.x = 0;
+    if comb.y == -1:
+        comb.y = 4;
+
+    T_exhaust = arg_in.T_exhaust;
+    if T_exhaust == -1.:
+        T_exhaust = 600 #K
+    p4 = arg_in.p4;
+    if p4 == -1.:
+        p4 = 0.0503 #bar
+    x6 = arg_in.x6;
+    if x6 == -1.:
+        x6 = 0.88 #[-]
+    T0 = arg_in.T_0;
+    if T0 == -1.:
+        T0 = 288.15 #[K]
     T_ext = arg_in.T_ext;
     if T_ext ==-1.:
         T_ext = 288.15;#15°C
-    nsout = arg_in.nsout;
-    if nsout ==-1.:
-        nsout = 3;#15°C
 
+    #Bon il reste a faire TpinchSub,TpinchEx, TpinchCond,TpinchHR,Tdrum
 
-
+    eta_SiC = arg_in.eta_SiC;
+    if eta_SiC == -1.:
+        eta_SiC = 0.89
+    eta_SiT = arg_in.eta_SiT;
+    if eta_SiT == -1.:
+        eta_SiT = 0.89
     ## cycle definition
     # =================
     # Your job
@@ -112,29 +156,8 @@ def ST(ST_inputs):
     ## define output arguments
     # ======================
     outputs = ST_arg.ST_outputs();
-    outputs.eta[1] = 0.35;
-    outputs.Xmassflow = np.array(nsout);
-
-    ## Generate graph to export:
-    # ==========================
-    # random data:
-    t = np.arange(0.0, 2.0, 0.01)
-    s1 = np.sin(2*np.pi*t)
-    s2 = np.sin(4*np.pi*t)
-
-    # My 1st figure:
-    fig1 = plt.figure(1)
-    plt.plot(t, s1)
-
-    # My 2nd figure:
-    fig2 = plt.figure(2)
-    plt.plot(t, s2)
-
-    # ...
-    outputs.fig = [fig1, fig2]
-
-    if (arg_in.DISPLAY == 1):
-        plt.show()
+    print(comb.Tmax,'hee')
+    ##
 
     return outputs;
 
@@ -146,6 +169,4 @@ print (steamTable.h_ps(0.05,steamTable.s_pt(50,300)));
 
 
 ST_inputs = ST_arg.ST_inputs();
-ST_inputs.DISPLAY = 1;
 results = ST(ST_inputs);
-results.fig[1].show();
