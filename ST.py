@@ -172,7 +172,7 @@ def ST(ST_inputs):
     # h2s=steamTable.h_ps(p2,s1)
     # h2 = (h2s-h1)/eta_SiC+h1
     h2=v1*(p2-p1)*10**2/eta_SiC+h1#kJ/kg
-    T2= steamTable.t_ph(p2,h2)
+    T2= steamTable.t_ph(p2,h2)+273.15#K
     s2 = steamTable.s_ph(p2,h2)
     x2= None # eau non saturée
 
@@ -200,7 +200,7 @@ def ST(ST_inputs):
     h4= h3-(h3-h4s)*eta_SiT
     x4 = x6
     s4 = steamTable.s_ph(p4,h4)
-    T4 = steamTable.t_ph(p4,h4)#°C
+    T4 = steamTable.t_ph(p4,h4)+273.15#K
 
     """
     4) Condenser
@@ -245,7 +245,7 @@ def ST(ST_inputs):
     outputs = ST_arg.ST_outputs();
     outputs.eta[0:]= [eta_cyclen,eta_toten,eta_cyclex,eta_totex,eta_gen,eta_gex,eta_combex,eta_chemex,eta_condex,eta_transex]
     outputs.daten[0:]=[P_gen, P_mec, P_cond]
-    outputs.dat[0:]= [[T1-273.15,T2-273.15,T3-273.15,T4-273.15],[p1,p2,p3,p4],[h1,h2,h3,h4],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
+    outputs.dat[0:]= [[T1-273.15,T2-273.15,T3-273.15,T4-273.15],[p1,p2,p3,p4],[h1,h2,h3,h4],[s1,s2,s3,s4],[0,0,0,0],[x1,x2,x3,x4]]
     return outputs;
 
 # Example:
@@ -257,4 +257,4 @@ print (steamTable.h_ps(0.05,steamTable.s_pt(50,300)));
 
 ST_inputs = ST_arg.ST_inputs();
 results = ST(ST_inputs);
-print(results.dat[:])
+print(results.dat)
