@@ -71,6 +71,7 @@ def ST(ST_inputs):
                                 eta_SiT(1)=eta_SiT_HP,eta_SiT(2)=eta_SiT_others
      DISPLAY = 1 or 0. If 1, then the code should plot graphics. If 0, then do not plot.
      """
+    steamTable = XSteam(XSteam.UNIT_SYSTEM_MKS); # m/kg/sec/°C/bar/W
     arg_in = ST_inputs;
 
     ## Check input arguments
@@ -87,10 +88,10 @@ def ST(ST_inputs):
         reheat = 1.;# Number of reheating
     T_max = arg_in.T_max;
     if T_max == -1.:
-        T_max = 500+273.15; #K
+        T_max = 520 #°C
     T_cond_out = arg_in.T_cond_out;
     if T_cond_out == -1.:
-        T_cond_out = 30+273.15 #K
+        T_cond_out = 30#°C
     p3_hp = arg_in.p3_hp;
     if p3_hp == -1.:
         p3_hp =40 #bar
@@ -100,7 +101,7 @@ def ST(ST_inputs):
 
     comb = arg_in.combustion
     if comb.Tmax == -1:
-        comb.Tmax = 1400#K
+        comb.Tmax = 1400#°C
     if comb.Lambda == -1:
         comb.Lambda = 2;
     if comb.x == -1:
@@ -110,7 +111,7 @@ def ST(ST_inputs):
 
     T_exhaust = arg_in.T_exhaust;
     if T_exhaust == -1.:
-        T_exhaust = 600 #K
+        T_exhaust = 600 #°C
     p4 = arg_in.p4;
     if p4 == -1.:
         p4 = 0.0503 #bar
@@ -119,10 +120,10 @@ def ST(ST_inputs):
         x6 = 0.88 #[-]
     T0 = arg_in.T_0;
     if T0 == -1.:
-        T0 = 288.15 #[K]
+        T0 = 15#°C
     T_ext = arg_in.T_ext;
     if T_ext ==-1.:
-        T_ext = 288.15;#15°C
+        T_ext = 15;#15°C
 
     #Bon il reste a faire TpinchSub,TpinchEx, TpinchCond,TpinchHR,Tdrum
 
@@ -132,6 +133,9 @@ def ST(ST_inputs):
     eta_SiT = arg_in.eta_SiT;
     if eta_SiT == -1.:
         eta_SiT = 0.89
+
+    # Put all temperatures in Kelvin
+    T_max,T_cond_out, T_exhaust, T0, T_ext = T_max+273.15,T_cond_out+273.15, T_exhaust+273.15, T0+273.15, T_ext+273.15 #K
     ## cycle definition
     # =================
     # Your job
@@ -151,14 +155,58 @@ def ST(ST_inputs):
     #                           are the losses negligible compare to the useful energy?
     #        As a conclusion, what can we do to decrease this loss?
 
+    """
+    1) Pump
+    """
+    T1= T_cond_out
+    print('T1',T1-273.15)
+    p1 = steamTable.psat_t(T1-273.15)
+    print('p1',p1)
+    h1= steamTable.hL_p(p1)
+    print('h1',h1)
+    s1= steamTable.sL_p(p1)
+    print(s1,'s1')
+    x1 = 0
+    v1 = steamTable.vL_p(p1)
 
 
-    ## define output arguments
-    # ======================
+
+    p2=p3_hp#bar
+    #s2=s1
+    # h2s=steamTable.h_ps(p2,s1)
+    # h2 = (h2s-h1)/eta_SiC+h1
+    h2=v1*(p2-p1)*10**2/eta_SiC+h1#kJ/kg
+    T2= steamTable.t_ph(p2,h2)
+    s2 = steamTable.s_ph(p2,h2)
+    x2= None
+
+
+    """
+    2) Boiler
+    """
+    # s'occuper ici de la combustion
+
+    T3=T_max #K
+    p3= p3_hp #bar
+    h3=steamTable.h_pt(p3,T3-273.15)
+    s3=steamTable.s_pt(p3,T3-273.15)
+    x3 = None
+
+    """
+    3) Turbine
+    """
+
+    T4=T_cond_out
+    p4=p4
+    h4=0
+
+    """
+    Last) Define output arguments
+    """
+
     outputs = ST_arg.ST_outputs();
-    print(comb.Tmax,'hee')
-    ##
 
+    outputs.dat[0:]= [[T1-273.15,T2-273.15,T3-273.15,T4-273.15],[p1,p2,p3,p4],[h1,h2,h3,h4],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
     return outputs;
 
 # Example:
