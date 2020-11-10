@@ -188,6 +188,8 @@ def ST(ST_inputs):
     s3=steamTable.s_pt(p3,T3-273.15)
     x3 = None # vapeur surchauffée
 
+    Q1 = h3-h2 #kJ/kg_v
+
     """
     3) Turbine
     """
@@ -199,13 +201,50 @@ def ST(ST_inputs):
     x4 = x6
     s4 = steamTable.s_ph(p4,h4)
     T4 = steamTable.t_ph(p4,h4)#°C
-    print(T4,'T4',p4,'p4',x4,'x4',h4,'h4',s4,'s4')
+
+    """
+    4) Condenser
+    """
+    Q2 = h4-h1 # kJ/kg_v
+
+    """
+    5) Mechanical work:
+    """
+    Wm_t = h3-h4
+    Wm_c = h2-h1
+    Wm = Wm_t-Wm_c
+
+    """
+    6) Cycle efficiency and massflows
+    """
+    eta_cyclen = Wm/Q1
+    eta_toten = 0
+    mv = Pe/(Wm*eta_mec) #kg_v/s
+
+    eta_gen = 0
+
+    """
+    7) Computation of enegy losses :
+    """
+    P_cond = Q2*mv#kW
+    P_mec = Pe-Wm*mv
+    P_gen = 0
+    """
+    8) Exergy efficiencies
+    """
+    eta_cyclex =0
+    eta_totex =0
+    eta_gex=0
+    eta_combex = 0
+    eta_chemex = 0
+    eta_condex = 0
+    eta_transex =0
     """
     Last) Define output arguments
     """
-
     outputs = ST_arg.ST_outputs();
-
+    outputs.eta[0:]= [eta_cyclen,eta_toten,eta_cyclex,eta_totex,eta_gen,eta_gex,eta_combex,eta_chemex,eta_condex,eta_transex]
+    outputs.daten[0:]=[P_gen, P_mec, P_cond]
     outputs.dat[0:]= [[T1-273.15,T2-273.15,T3-273.15,T4-273.15],[p1,p2,p3,p4],[h1,h2,h3,h4],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
     return outputs;
 
@@ -218,3 +257,4 @@ print (steamTable.h_ps(0.05,steamTable.s_pt(50,300)));
 
 ST_inputs = ST_arg.ST_inputs();
 results = ST(ST_inputs);
+print(results.dat[:])
