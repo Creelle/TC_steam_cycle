@@ -117,7 +117,7 @@ def ST(ST_inputs):
         p4 = 0.0503 #bar
     x6 = arg_in.x6;
     if x6 == -1.:
-        x6 = 0.88 #[-]
+        x6 = 0.91 #[-]
     T0 = arg_in.T_0;
     if T0 == -1.:
         T0 = 15#°C
@@ -159,13 +159,9 @@ def ST(ST_inputs):
     1) Pump
     """
     T1= T_cond_out
-    print('T1',T1-273.15)
     p1 = steamTable.psat_t(T1-273.15)
-    print('p1',p1)
     h1= steamTable.hL_p(p1)
-    print('h1',h1)
     s1= steamTable.sL_p(p1)
-    print(s1,'s1')
     x1 = 0
     v1 = steamTable.vL_p(p1)
 
@@ -178,7 +174,7 @@ def ST(ST_inputs):
     h2=v1*(p2-p1)*10**2/eta_SiC+h1#kJ/kg
     T2= steamTable.t_ph(p2,h2)
     s2 = steamTable.s_ph(p2,h2)
-    x2= None
+    x2= None # eau non saturée
 
 
     """
@@ -190,16 +186,20 @@ def ST(ST_inputs):
     p3= p3_hp #bar
     h3=steamTable.h_pt(p3,T3-273.15)
     s3=steamTable.s_pt(p3,T3-273.15)
-    x3 = None
+    x3 = None # vapeur surchauffée
 
     """
     3) Turbine
     """
 
-    T4=T_cond_out
-    p4=p4
-    h4=0
 
+    p4=p4
+    h4s = steamTable.h_ps(p4,s3)
+    h4= h3-(h3-h4s)*eta_SiT
+    x4 = x6
+    s4 = steamTable.s_ph(p4,h4)
+    T4 = steamTable.t_ph(p4,h4)#°C
+    print(T4,'T4',p4,'p4',x4,'x4',h4,'h4',s4,'s4')
     """
     Last) Define output arguments
     """
