@@ -18,16 +18,16 @@ class boiler_input:
     def __init__(self, Lambda = 2,#excess air
                      x_O2a = 0.21,# molar fraction
                      x_N2a = 0.79,# molar fraction
-                     T_in = 600,#°C
+                     T_in = 15,#°C
                      inversion =False,
-                     T_out = 1000, #°Cpour trouver lambda en fonction de T_out mettre true
+                     T_out = 1200, #°Cpour trouver lambda en fonction de T_out mettre true
                      HHV = 55695, # [kJ/kg_CH4],
                      LHV =50150,
                      ftype = "CH4",
                      T_ext = 15,#°C
-                     T_exhaust = 50,#°C
+                     T_exhaust = 200,#°C
                      T_pinchHR = 50,#°C
-                     Q=1000):# [kJ/kg_v]
+                     Q=3361*31):# [kJ/kg_v]
         # combustion
         self.Lambda = Lambda;
         self.x_O2a = x_O2a;
@@ -51,7 +51,6 @@ class boiler_output:
      It returns the mass fraction of the different
 
      OUTPUTS
-     R_f   : ideal gas constant (R*) for specific gas (R/Mm_f) [kJ/kg/K]
      m_O2f : mass fraction of oxygen in exhaust gases [-]
      m_N2f : mass fraction of nitrogen in exhaust gases [-]
      m_CO2f : mass fraction of carbon dioxyde in exhaust gases [-]
@@ -66,6 +65,7 @@ class boiler_output:
                      air_massflow = 1, #kg/s
                      LHV = 50000,#Low heating value [kJ/kg_f]
                      Lambda=2,
+                     T_out = 1200,#°C
                      e_c = 1., #kJ/kg_ch4
                      eta_combex = 1.,
                      Cp_g = 1,# [kJ/kg/K]
@@ -80,14 +80,16 @@ class boiler_output:
         self.m_N2f = m_N2f ;
         self.m_CO2f = m_CO2f;
         self.m_H2Of = m_H2Of;
-        self.air_massflow = air_massflow;
+
 
         self.Lambda = Lambda;
+        self.T_out = T_out#°C
         self.e_c=e_c;
         self.eta_combex = eta_combex;
         self.Cp_g = Cp_g;
         self.LHV = LHV;
 
+        self.air_massflow = air_massflow;
         self.T_hot_in = T_hot_in;
         self.T_hot_out = T_hot_out;
         self.T_cold_in = T_cold_in;

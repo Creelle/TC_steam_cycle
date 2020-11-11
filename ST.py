@@ -189,7 +189,7 @@ def ST(ST_inputs):
     x3 = None # vapeur surchauffée
 
     Q1 = h3-h2 #kJ/kg_v
-
+    print(Q1,'Q1')
     """
     3) Turbine
     """
@@ -218,10 +218,15 @@ def ST(ST_inputs):
     6) Cycle efficiency and massflows
     """
     eta_cyclen = Wm/Q1
-    eta_toten = 0
-    mv = Pe/(Wm*eta_mec) #kg_v/s
 
+    mv = Pe/(Wm*eta_mec) #kg_v/s
+    print(mv,'mv')
     eta_gen = 0
+    eta_toten = 0
+    Q_boiler = mv*Q1
+    """
+    7) Boiler 
+    """
 
     """
     7) Computation of enegy losses :
