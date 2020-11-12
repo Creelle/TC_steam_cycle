@@ -35,7 +35,7 @@ def boiler(STboiler_input):
     Q= arg_in.Q
     T_ext =arg_in.T_ext+273.15#K
     T_exhaust = arg_in.T_exhaust+273.15#K
-    T_pinchHR = arg_in.T_pinchHR
+    TpinchHR = arg_in.TpinchHR
 
     molar_mass_f = 0.018
     coeff = xN2a/xO2a
@@ -65,7 +65,7 @@ def boiler(STboiler_input):
     mass_conc = molar_conc*molar_mass/Mm_af #[-] kg_co2/kg_tot
 
     #  find lambda (inversion ==True) or T_out(inversion == False) by iterations
-    T_in = T_exhaust-T_pinchHR #K # préchauffage
+    T_in = T_exhaust-TpinchHR #K # préchauffage
     #T_in = T_ext #sans préchauffage
     dt = 0.1
     iter = 1
@@ -83,6 +83,7 @@ def boiler(STboiler_input):
             iter = iter + 1
             error = abs(T_out_final - T_out)
             T_out = T_out_final
+            print("coucou")
             # print("Nombre d'itérations : ",iter)
             # print("T_out : ",T_out,"K")
 
@@ -143,14 +144,18 @@ def boiler(STboiler_input):
     outputs.m_N2f,outputs.m_CO2f,outputs.m_H2Of,outputs.m_O2f = mass_conc  #[-]
     outputs.Lambda = Lambda
     outputs.T_out = T_out -273.15 #°C
-    outputs.Cp_g = useful.cp_air(T_out,mass_conc,Mm_af)
+    outputs.Cp_g = useful.cp_air(T_out,mass_conc,Mm_af)/1000 # [kJ/kg/K]
     outputs.LHV = LHV
 
     outputs.T_hot_out = T_exhaust-273.15 #°C
     outputs.T_cold_in = T_ext-273.15 #°C
-    outputs.T_cold_out = T_exhaust-T_pinchHR-273.15#°C
-    outputs.T_hot_in = T_out-273.15
+    outputs.T_cold_out = T_exhaust-TpinchHR-273.15#°C
+    outputs.T_hot_in = T_hot_in-273.15
 
+    outputs.boiler_massflow[0:]= [massflow_a,0,massflow_c,massflow_f]
+
+    #pour l instant il manque e_c , eta_combex,
     return outputs
 
 results = boiler(STboiler_arg.boiler_input(inversion=True))
+print(results.boiler_massflow)

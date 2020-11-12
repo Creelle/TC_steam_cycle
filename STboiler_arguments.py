@@ -1,3 +1,5 @@
+import numpy as np
+
 
 class boiler_input:
     """
@@ -20,13 +22,13 @@ class boiler_input:
                      x_N2a = 0.79,# molar fraction
                      T_in = 15,#°C
                      inversion =False,
-                     T_out = 1200, #°Cpour trouver lambda en fonction de T_out mettre true
+                     T_out = 1400, #°Cpour trouver lambda en fonction de T_out mettre true
                      HHV = 55695, # [kJ/kg_CH4],
                      LHV =50150,
                      ftype = "CH4",
                      T_ext = 15,#°C
                      T_exhaust = 200,#°C
-                     T_pinchHR = 50,#°C
+                     TpinchHR = 50,#°C
                      Q=3361*31):# [kJ/kg_v]
         # combustion
         self.Lambda = Lambda;
@@ -43,7 +45,7 @@ class boiler_input:
         self.Q = Q
         self.T_ext = T_ext
         self.T_exhaust = T_exhaust
-        self.T_pinchHR = T_pinchHR
+        self.TpinchHR = TpinchHR
 
 class boiler_output:
     """
@@ -86,10 +88,10 @@ class boiler_output:
         self.T_out = T_out#°C
         self.e_c=e_c;
         self.eta_combex = eta_combex;
-        self.Cp_g = Cp_g;
+        self.Cp_g = Cp_g;#[kJ/kg/K]
         self.LHV = LHV;
 
-        self.air_massflow = air_massflow;
+        self.boiler_massflow = np.zeros(4);# air, vapor/water , combutible, exhaust
         self.T_hot_in = T_hot_in;
         self.T_hot_out = T_hot_out;
         self.T_cold_in = T_cold_in;

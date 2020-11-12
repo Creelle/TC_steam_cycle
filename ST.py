@@ -7,10 +7,10 @@
 # Students can modify this script.
 # However, the arguments for the ST defined in ST_arguments.py CANNOT be modified
 
-
-
 import numpy as np;
 import ST_arguments as ST_arg;
+import STboiler_arguments as STboiler_arg;
+from boiler import boiler
 import matplotlib.pyplot as plt
 from pyXSteam.XSteam import XSteam # see documentation here: https://pypi.org/project/pyXSteam/
 
@@ -99,11 +99,11 @@ def ST(ST_inputs):
     if eta_mec == -1.:
         eta_mec = 0.95 #[-]
 
+
     comb = arg_in.combustion
-    if comb.Tmax == -1:
-        comb.Tmax = 1400#°C
-    if comb.Lambda == -1:
-        comb.Lambda = 2;
+    inversion = True  # on doit calculer Lambda a partir de Tmax
+
+    comb.Tmax = 273.15+1400;
     if comb.x == -1:
         comb.x = 0;
     if comb.y == -1:
@@ -111,7 +111,7 @@ def ST(ST_inputs):
 
     T_exhaust = arg_in.T_exhaust;
     if T_exhaust == -1.:
-        T_exhaust = 600 #°C
+        T_exhaust = 200 #°C
     p4 = arg_in.p4;
     if p4 == -1.:
         p4 = 0.0503 #bar
@@ -124,8 +124,25 @@ def ST(ST_inputs):
     T_ext = arg_in.T_ext;
     if T_ext ==-1.:
         T_ext = 15;#15°C
+    Tdrum = arg_in.Tdrum;
+    if Tdrum ==-1.:
+        Tdrum = 15;#15°C
 
-    #Bon il reste a faire TpinchSub,TpinchEx, TpinchCond,TpinchHR,Tdrum
+    #Bon il reste a faire TpinchSub,TpinchEx, TpinchCond,TpinchHR
+    # ce sont des differences de temperatures donc on ne change pas
+
+    TpinchSub = arg_in.TpinchSub;
+    if TpinchSub ==-1.:
+        TpinchSub = 15;#°C
+    TpinchEx = arg_in.TpinchEx;
+    if TpinchEx ==-1.:
+        TpinchEx = 15;#°C
+    TpinchCond = arg_in.TpinchCond;
+    if TpinchCond ==-1.:
+        TpinchCond = 15;#°C
+    TpinchHR = arg_in.TpinchHR;
+    if TpinchHR ==-1.:
+        TpinchHR = 50;#°C
 
     eta_SiC = arg_in.eta_SiC;
     if eta_SiC == -1.:
@@ -135,7 +152,7 @@ def ST(ST_inputs):
         eta_SiT = 0.89
 
     # Put all temperatures in Kelvin
-    T_max,T_cond_out, T_exhaust, T0, T_ext = T_max+273.15,T_cond_out+273.15, T_exhaust+273.15, T0+273.15, T_ext+273.15 #K
+    T_max,T_cond_out, T_exhaust, T0, T_ext, T_drum= T_max+273.15,T_cond_out+273.15, T_exhaust+273.15, T0+273.15, T_ext+273.15, Tdrum +273.15 #K
     ## cycle definition
     # =================
     # Your job
@@ -189,7 +206,6 @@ def ST(ST_inputs):
     x3 = None # vapeur surchauffée
 
     Q1 = h3-h2 #kJ/kg_v
-    print(Q1,'Q1')
     """
     3) Turbine
     """
@@ -224,18 +240,24 @@ def ST(ST_inputs):
     eta_gen = 0
     eta_toten = 0
     Q_boiler = mv*Q1
-    """
-    7) Boiler 
-    """
 
     """
-    7) Computation of enegy losses :
+    7) Boiler combustion and heat recovery
+    """
+    boiler_inputs = STboiler_arg.boiler_input(inversion=inversion, Lambda = comb.Lambda, T_out = comb.Tmax-273.15,
+                                            T_exhaust =T_exhaust-273.15,TpinchHR = TpinchHR,T_ext = T_ext-273.15,
+                                            Q = Q_boiler)
+    boiler_outputs = boiler(boiler_inputs)
+    ma,dummy,mc,mf = boiler_outputs.boiler_massflow[0:]
+
+    """
+    8) Computation of energy losses :
     """
     P_cond = Q2*mv#kW
     P_mec = Pe-Wm*mv
     P_gen = 0
     """
-    8) Exergy efficiencies
+    9) Exergy efficiencies
     """
     eta_cyclex =0
     eta_totex =0
@@ -251,15 +273,25 @@ def ST(ST_inputs):
     outputs.eta[0:]= [eta_cyclen,eta_toten,eta_cyclex,eta_totex,eta_gen,eta_gex,eta_combex,eta_chemex,eta_condex,eta_transex]
     outputs.daten[0:]=[P_gen, P_mec, P_cond]
     outputs.dat[0:]= [[T1-273.15,T2-273.15,T3-273.15,T4-273.15],[p1,p2,p3,p4],[h1,h2,h3,h4],[s1,s2,s3,s4],[0,0,0,0],[x1,x2,x3,x4]]
+    outputs.massflow = boiler_outputs.boiler_massflow #[ma,0,mc,mf]
+    outputs.massflow[1] = mv
+
+    #combustion
+    outputs.combustion.LHV = boiler_outputs.LHV #[kJ/kg_f]
+    outputs.combustion.e_c = 1
+    outputs.combustion.Lambda = boiler_outputs.Lambda 
+    outputs.combustion.Cp_g = boiler_outputs.Cp_g
+    outputs.combustion.fum =np.array([boiler_outputs.m_O2f,boiler_outputs.m_N2f,boiler_outputs.m_CO2f,boiler_outputs.m_H2Of])*mf
     return outputs;
 
 # Example:
-steamTable = XSteam(XSteam.UNIT_SYSTEM_MKS); # m/kg/sec/°C/bar/W
-print (steamTable.h_pt(50,300));
-print (steamTable.s_pt(50,300));
-print (steamTable.h_ps(0.05,steamTable.s_pt(50,300)));
+# steamTable = XSteam(XSteam.UNIT_SYSTEM_MKS); # m/kg/sec/°C/bar/W
+# print (steamTable.h_pt(50,300));
+# print (steamTable.s_pt(50,300));
+# print (steamTable.h_ps(0.05,steamTable.s_pt(50,300)));
 
 
 ST_inputs = ST_arg.ST_inputs();
 results = ST(ST_inputs);
 print(results.dat)
+print(results.combustion.Lambda)
