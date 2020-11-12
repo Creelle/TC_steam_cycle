@@ -73,14 +73,15 @@ def boiler(STboiler_input):
     error = 1
 
     h_f0 =  useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T0-15,T0,dt)
-    #on neglige hc
+    hc= useful.janaf_integrate(useful.cpCH4,273.15,T0,0.01)/Mm_f
+    print(hc,LHV*1000)
     ha = useful.janaf_integrate_air(useful.cp_air,mass_conc0,Mm_a,T0-15,T_in,0.01) #attention useful.cp_air [J/kg_air] #basically h_in=ha
 
     if (inversion == False):
         T_out = 1273.15 #[K] first estimation
         while iter < 50 and error > 0.01 :
             cp_f = useful.cp_mean_air(useful.cp_air,mass_conc,Mm_af,T0,T_out,dt)
-            T_out_final = (T0 + ((1000*LHV  + Lambda*ma1*ha)/((Lambda*ma1+1)*cp_f)) - h_f0/(cp_f))
+            T_out_final = (T0 + ((1000*LHV + hc + Lambda*ma1*ha)/((Lambda*ma1+1)*cp_f)) - h_f0/(cp_f))
             iter = iter + 1
             error = abs(T_out_final - T_out)
             T_out = T_out_final
@@ -99,7 +100,7 @@ def boiler(STboiler_input):
             cp_f = useful.cp_mean_air(useful.cp_air,mass_conc,Mm_af,T0,T_out,dt)
             h_f0 = useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T0-15,T0,dt)
 
-            Lambda_final = (cp_f*(T_out-T0) + h_f0 - LHV*1000 )/(ma1*(ha - h_f0 + cp_f*(T0-T_out)))
+            Lambda_final = (cp_f*(T_out-T0) + h_f0 - LHV*1000 - hc)/(ma1*(ha - h_f0 + cp_f*(T0-T_out)))
             iter = iter + 1
             error = abs(Lambda_final-Lambda)
             Lambda = Lambda_final

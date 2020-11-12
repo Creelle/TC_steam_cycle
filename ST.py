@@ -70,6 +70,7 @@ def ST(ST_inputs):
      eta_SiT    [-] : Isotrenpic efficiency for Turbine. It can be a vector of 2 values :
                                 eta_SiT(1)=eta_SiT_HP,eta_SiT(2)=eta_SiT_others
      DISPLAY = 1 or 0. If 1, then the code should plot graphics. If 0, then do not plot.
+     figures a faire TS, HS, piechart energy, piechart exergy
      """
     steamTable = XSteam(XSteam.UNIT_SYSTEM_MKS); # m/kg/sec/°C/bar/W
     arg_in = ST_inputs;
@@ -101,9 +102,10 @@ def ST(ST_inputs):
 
 
     comb = arg_in.combustion
-    inversion = True  # on doit calculer Lambda a partir de Tmax
 
+    inversion = True  # on doit calculer Lambda a partir de Tmax
     comb.Tmax = 273.15+1400;
+
     if comb.x == -1:
         comb.x = 0;
     if comb.y == -1:
@@ -279,7 +281,7 @@ def ST(ST_inputs):
     #combustion
     outputs.combustion.LHV = boiler_outputs.LHV #[kJ/kg_f]
     outputs.combustion.e_c = 1
-    outputs.combustion.Lambda = boiler_outputs.Lambda 
+    outputs.combustion.Lambda = boiler_outputs.Lambda
     outputs.combustion.Cp_g = boiler_outputs.Cp_g
     outputs.combustion.fum =np.array([boiler_outputs.m_O2f,boiler_outputs.m_N2f,boiler_outputs.m_CO2f,boiler_outputs.m_H2Of])*mf
     return outputs;

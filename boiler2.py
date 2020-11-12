@@ -5,7 +5,7 @@ import useful
 from thermochem import janaf
 db = janaf.Janafdb();
 
-
+#ici contre courant
 
 
 """
@@ -66,79 +66,82 @@ def boiler(STboiler_input):
     mass_conc = molar_conc*molar_mass/Mm_af #[-] kg_co2/kg_tot
 
     #  find lambda (inversion ==True) or T_out(inversion == False) by iterations
-    T_in = T_exhaust-TpinchHR #K # préchauffage
+
+    T_in = T_ext+60 #K # préchauffage
+    print(T_in)
     #T_in = T_ext #sans préchauffage
-    dt = 0.1
-    iter = 1
-    error = 1
-
-    h_f0 =  useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T0-15,T0,dt)
-    #on neglige hc
-    ha = useful.janaf_integrate_air(useful.cp_air,mass_conc0,Mm_a,T0-15,T_in,0.01) #attention useful.cp_air [J/kg_air] #basically h_in=ha
-
-    if (inversion == False):
-        T_out = 1273.15 #[K] first estimation
-        while iter < 50 and error > 0.01 :
-            cp_f = useful.cp_mean_air(useful.cp_air,mass_conc,Mm_af,T0,T_out,dt)
-            T_out_final = (T0 + ((1000*LHV  + Lambda*ma1*ha)/((Lambda*ma1+1)*cp_f)) - h_f0/(cp_f))
-            iter = iter + 1
-            error = abs(T_out_final - T_out)
-            T_out = T_out_final
-            # print("Nombre d'itérations : ",iter)
-            # print("T_out : ",T_out,"K")
-
-    if (inversion == True):
-        #Lambda = 2 # first estimation
-        while iter <50 and error > 0.01 :
-            coeff_stochio = np.array([2*Lambda*coeff,1,2,2*(Lambda-1)]) # N2- CO2 - H2O - O2
-            total_n = sum(coeff_stochio) # total moles
-            molar_conc = coeff_stochio/total_n # concentration of elements mol_co2/mol_tot
-            Mm_af = sum(molar_conc*molar_mass)
-            mass_conc = molar_conc*molar_mass/Mm_af
-
-            cp_f = useful.cp_mean_air(useful.cp_air,mass_conc,Mm_af,T0,T_out,dt)
-            h_f0 = useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T0-15,T0,dt)
-
-            Lambda_final = (cp_f*(T_out-T0) + h_f0 - LHV*1000 )/(ma1*(ha - h_f0 + cp_f*(T0-T_out)))
-            iter = iter + 1
-            error = abs(Lambda_final-Lambda)
-            Lambda = Lambda_final
-
-    """
-    2) Heat recovery add a preheater for the air before entering the combustion
-    chamber
-    """
-    # on connait T_ext, TpinchHR et T_exhaust
-    # T_out ou lambda nous est donné par la combustion
-    # Tout va dependre T_cold_out donc il faudra boucler
-
-    T_hot_in = T_exhaust+150 #K premiere estimation
-
     error2 = 1
     iter2 = 1
 
-    while error2>0.01 and iter2<100:
+    while error2>0.1 and iter2<100:
+        dt = 0.1
+        iter = 1
+        error = 1
+
+        h_f0 =  useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T0-15,T0,dt)
+        #on neglige hc
+        ha = useful.janaf_integrate_air(useful.cp_air,mass_conc0,Mm_a,T0-15,T_in,0.01) #attention useful.cp_air [J/kg_air] #basically h_in=ha
+
+        if (inversion == False):
+            T_out = 1273.15 #[K] first estimation
+            while iter < 50 and error > 0.01 :
+                cp_f = useful.cp_mean_air(useful.cp_air,mass_conc,Mm_af,T0,T_out,dt)
+                T_out_final = (T0 + ((1000*LHV + Lambda*ma1*ha)/((Lambda*ma1+1)*cp_f)) - h_f0/(cp_f))
+                iter = iter + 1
+                error = abs(T_out_final - T_out)
+                T_out = T_out_final
+                # print("Nombre d'itérations : ",iter)
+                # print("T_out : ",T_out,"K")
+
+        if (inversion == True):
+            #Lambda = 2 # first estimation
+            while iter <50 and error > 0.01 :
+                coeff_stochio = np.array([2*Lambda*coeff,1,2,2*(Lambda-1)]) # N2- CO2 - H2O - O2
+                total_n = sum(coeff_stochio) # total moles
+                molar_conc = coeff_stochio/total_n # concentration of elements mol_co2/mol_tot
+                Mm_af = sum(molar_conc*molar_mass)
+                mass_conc = molar_conc*molar_mass/Mm_af
+
+                cp_f = useful.cp_mean_air(useful.cp_air,mass_conc,Mm_af,T0,T_out,dt)
+                h_f0 = useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T0-15,T0,dt)
+
+                Lambda_final = (cp_f*(T_out-T0) + h_f0 - LHV*1000)/(ma1*(ha - h_f0 + cp_f*(T0-T_out)))
+                iter = iter + 1
+                error = abs(Lambda_final-Lambda)
+                Lambda = Lambda_final
+
+        """
+        2) Heat recovery add a preheater for the air before entering the combustion
+        chamber
+        """
+        # on connait T_ext, TpinchHR et T_exhaust
+        # T_out ou lambda nous est donné par la combustion
+        # Tout va dependre T_cold_out donc il faudra boucler
+
+        #T_hot_in =T_in +TpinchHR#K premiere estimation
+
+
 
         """
         3) Determine massflows
         """
-        massflow_f = Q*1000/useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T_hot_in,T_out,dt) #kg_f/kg_vapor
+        massflow_f = Q*1000/useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T_in+TpinchHR,T_out,dt) #kg_f/kg_vapor
         massflow_a = massflow_f/(1+1/(Lambda*ma1))
         massflow_c = massflow_f-massflow_a #kg/s
         print('massflow_c',massflow_c)
 
-        Cp_f = useful.cp_mean_air(useful.cp_air,mass_conc,Mm_af,T_exhaust,T_hot_in,dt)
+        Cp_f = useful.cp_mean_air(useful.cp_air,mass_conc,Mm_af,T_exhaust,T_in+TpinchHR,dt)
         Cp_a = useful.cp_mean_air(useful.cp_air,mass_conc0,Mm_a,T_ext,T_in,dt)
-        print(Cp_a*massflow_a, Cp_f*massflow_f)
-        T_hot_in_new = massflow_a*useful.janaf_integrate_air(useful.cp_air,mass_conc0,Mm_a,T_ext,T_in,dt)/(massflow_f*Cp_f)+T_exhaust
-        error2 = abs(T_hot_in-T_hot_in_new)
+        T_in_new = (massflow_f*Cp_f*T_exhaust-massflow_f*Cp_f*TpinchHR-massflow_a*Cp_a*T_ext)/(massflow_f*Cp_f-massflow_a*Cp_a)
+        #print(T_in_new,T_ext,T_exhaust,T_hot_in)
+        error2 = abs(T_in-T_in_new)
         iter2+=1
         if iter2 ==100:
             print("Max iteration occured, there may have been no convergence")
-        T_hot_in = T_hot_in_new
+        T_in = T_in_new
 
 
-
+    T_hot_in = T_in+TpinchHR
     """
     Last) Define the outputs :
     """
@@ -151,7 +154,7 @@ def boiler(STboiler_input):
 
     outputs.T_hot_out = T_exhaust-273.15 #°C
     outputs.T_cold_in = T_ext-273.15 #°C
-    outputs.T_cold_out = T_exhaust-TpinchHR-273.15#°C
+    outputs.T_cold_out = T_in-273.15#°C
     outputs.T_hot_in = T_hot_in-273.15
 
     outputs.boiler_massflow[0:]= [massflow_a,0,massflow_c,massflow_f]
