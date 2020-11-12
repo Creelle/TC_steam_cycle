@@ -18,6 +18,8 @@ des autres combustibles==>ok
     avec en bouclant
 
 OBJECTIVE S9: terminer le boiler et condenser
+A faire :
+Avant de s attaquer au bleed et feed heating, faire l analyse d exergie 
 A faire apres :
 - bleedheating
 - feedheating
