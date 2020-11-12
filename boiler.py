@@ -45,8 +45,8 @@ def boiler(STboiler_input):
     #string_fuel = "C"+"H"+string(y)+"O"+string(x)
     if ftype == "CH4":
         useful.CH4 = db.getphasedata(ftype,phase ='g');
-        molar_mass_f= 0.016
-    Mm_f = molar_mass_f; Mm_O2 = 0.032; Mm_N2 = 0.028; Mm_H2O = 0.018; Mm_CO2 = 0.044
+        molar_mass_fuel= 0.016
+    Mm_fuel = molar_mass_fuel; Mm_O2 = 0.032; Mm_N2 = 0.028; Mm_H2O = 0.018; Mm_CO2 = 0.044
 
     """
     1) Calcul de la combustion sans préchauffage :
@@ -55,7 +55,7 @@ def boiler(STboiler_input):
     #at the entering of the combustion
     molar_mass = np.array([0.028,0.044,0.018,0.032]) #kg/mol N2- CO2 - H2O - O2
     Mm_a = xO2a * Mm_O2 + xN2a * Mm_N2 # [kg/mol_air]
-    ma1 =  Mm_a/Mm_f * 2/xO2a # kg_air/kg_CH4 = proportion of air  vs combustible
+    ma1 =  Mm_a/Mm_fuel * 2/xO2a # kg_air/kg_CH4 = proportion of air  vs combustible
     mass_conc0 = np.array([xN2a,0,0,xO2a])*molar_mass/Mm_a
 
     # At the exit of the combustion:
