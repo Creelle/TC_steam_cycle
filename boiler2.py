@@ -28,6 +28,8 @@ def boiler(STboiler_input):
     inversion = arg_in.inversion
     T_out = arg_in.T_out + 273.15#K
     ftype = arg_in.ftype
+    x = arg_in.x
+    y =  arg_in.y
     HHV = arg_in.HHV
     LHV = arg_in.LHV
 
@@ -37,16 +39,29 @@ def boiler(STboiler_input):
     T_exhaust = arg_in.T_exhaust+273.15#K
     TpinchHR = arg_in.TpinchHR
 
-    molar_mass_f = 0.018
+    # molar_mass_f = 0.018
     coeff = xN2a/xO2a
     T0 = 288.15 #K
 
-    #Choisir le type de fuel ici
-    #string_fuel = "C"+"H"+string(y)+"O"+string(x)
-    if ftype == "CH4":
-        useful.CH4 = db.getphasedata(ftype,phase ='g');
-        molar_mass_f= 0.016
-    Mm_f = molar_mass_f; Mm_O2 = 0.032; Mm_N2 = 0.028; Mm_H2O = 0.018; Mm_CO2 = 0.044
+    # if x==0 and y!=1 :
+    #     ftype = 'C'+ 'H' + str(y)
+    # if x==0 and y==1 :
+    #     ftype = 'C'+ 'H'
+    # if y==0 and x!=1 :
+    #     ftype = 'C' + 'O' + str(x)
+    # if y==0 and x==1 :
+    #     ftype = 'C' + 'O'
+    # if x!=0 and y!=0 :
+    #     ftype = 'C'+ 'H' + str(y) + 'O' + str(x)
+
+    Mm_f = 0.012 + y*0.001 + x*0.016 ; Mm_O2 = 0.032; Mm_N2 = 0.028; Mm_H2O = 0.018; Mm_CO2 = 0.044
+
+    mc = 0.012/Mm_f ; mh = y*0.001/Mm_f ; mo = (x*0.016)/Mm_f
+
+    LHV = (38.2*mc + 84.9*(mh - mo/8))*1000 #[kJ/kg_fuel] --> formule modified Dulong's formula.
+    HHV = LHV
+    if y!=0:
+        HHV = LHV + (y/2)*40.752/Mm_f #[kJ/kg_fuel] --> we're adding the latent heat of water.
 
     """
     1) Calcul de la combustion sans préchauffage :
@@ -55,11 +70,11 @@ def boiler(STboiler_input):
     #at the entering of the combustion
     molar_mass = np.array([0.028,0.044,0.018,0.032]) #kg/mol N2- CO2 - H2O - O2
     Mm_a = xO2a * Mm_O2 + xN2a * Mm_N2 # [kg/mol_air]
-    ma1 =  Mm_a/Mm_f * 2/xO2a # kg_air/kg_CH4 = proportion of air  vs combustible
+    ma1 =  Mm_a/Mm_f * (1 + (y-2*x)/4)/xO2a # kg_air/kg_CH4 = proportion of air  vs combustible
     mass_conc0 = np.array([xN2a,0,0,xO2a])*molar_mass/Mm_a
 
     # At the exit of the combustion:
-    coeff_stochio = np.array([2*Lambda*coeff,1,2,2*(Lambda-1)]) # N2- CO2 - H2O - O2
+    coeff_stochio = np.array([(1 + (y-2*x)/4)*Lambda*coeff,1,y/2,(1 + (y-2*x)/4)*(Lambda-1)]) # N2- CO2 - H2O - O2
     total_n = sum(coeff_stochio) # total moles
     molar_conc = coeff_stochio/total_n # concentration of elements
     Mm_af = sum(molar_conc*molar_mass) #kg/mol_air
@@ -96,11 +111,11 @@ def boiler(STboiler_input):
         if (inversion == True):
             #Lambda = 2 # first estimation
             while iter <50 and error > 0.01 :
-                coeff_stochio = np.array([2*Lambda*coeff,1,2,2*(Lambda-1)]) # N2- CO2 - H2O - O2
+                coeff_stochio = np.array([(1 + (y-2*x)/4)*Lambda*coeff,1,y/2,(1 + (y-2*x)/4)*(Lambda-1)]) # N2- CO2 - H2O - O2
                 total_n = sum(coeff_stochio) # total moles
-                molar_conc = coeff_stochio/total_n # concentration of elements mol_co2/mol_tot
-                Mm_af = sum(molar_conc*molar_mass)
-                mass_conc = molar_conc*molar_mass/Mm_af
+                molar_conc = coeff_stochio/total_n # concentration of elements
+                Mm_af = sum(molar_conc*molar_mass) #kg/mol_air
+                mass_conc = molar_conc*molar_mass/Mm_af #[-] kg_co2/kg_tot
 
                 cp_f = useful.cp_mean_air(useful.cp_air,mass_conc,Mm_af,T0,T_out,dt)
                 h_f0 = useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T0-15,T0,dt)
