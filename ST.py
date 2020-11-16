@@ -92,7 +92,7 @@ def ST(ST_inputs):
         T_max = 520 #°C
     T_cond_out = arg_in.T_cond_out;
     if T_cond_out == -1.:
-        T_cond_out = 30#°C
+        T_cond_out = 25#°C
     p3_hp = arg_in.p3_hp;
     if p3_hp == -1.:
         p3_hp =40 #bar
@@ -113,7 +113,7 @@ def ST(ST_inputs):
 
     T_exhaust = arg_in.T_exhaust;
     if T_exhaust == -1.:
-        T_exhaust = 200 #°C
+        T_exhaust = 150 #°C
     p4 = arg_in.p4;
     if p4 == -1.:
         p4 = 0.0503 #bar
@@ -135,16 +135,16 @@ def ST(ST_inputs):
 
     TpinchSub = arg_in.TpinchSub;
     if TpinchSub ==-1.:
-        TpinchSub = 15;#°C
+        TpinchSub = 15;#delta K
     TpinchEx = arg_in.TpinchEx;
     if TpinchEx ==-1.:
-        TpinchEx = 15;#°C
+        TpinchEx = 15;#delta K
     TpinchCond = arg_in.TpinchCond;
     if TpinchCond ==-1.:
-        TpinchCond = 15;#°C
+        TpinchCond = 5;#delta K
     TpinchHR = arg_in.TpinchHR;
     if TpinchHR ==-1.:
-        TpinchHR = 50;#°C
+        TpinchHR = 100;#delta K
 
     eta_SiC = arg_in.eta_SiC;
     if eta_SiC == -1.:
@@ -177,14 +177,13 @@ def ST(ST_inputs):
     """
     1) Pump
     """
-    T1= T_cond_out
+    T1= T_cond_out+TpinchCond
     p1 = steamTable.psat_t(T1-273.15)
     h1= steamTable.hL_p(p1)
     s1= steamTable.sL_p(p1)
     x1 = 0
     v1 = steamTable.vL_p(p1)
-
-
+    e1 = h1-T0*s1#kJ/kg
 
     p2=p3_hp#bar
     #s2=s1
@@ -194,7 +193,7 @@ def ST(ST_inputs):
     T2= steamTable.t_ph(p2,h2)+273.15#K
     s2 = steamTable.s_ph(p2,h2)
     x2= None # eau non saturée
-
+    e2 = h2-T0*s2#kJ/kg
 
     """
     2) Boiler
@@ -206,24 +205,35 @@ def ST(ST_inputs):
     h3=steamTable.h_pt(p3,T3-273.15)
     s3=steamTable.s_pt(p3,T3-273.15)
     x3 = None # vapeur surchauffée
+    e3 = h3-T0*s3#kJ/kg
 
     Q1 = h3-h2 #kJ/kg_v
+
     """
     3) Turbine
     """
 
-
     p4=p4
     h4s = steamTable.h_ps(p4,s3)
-    h4= h3-(h3-h4s)*eta_SiT
+    h42= h3-(h3-h4s)*eta_SiT
     x4 = x6
+    h4 = x4*steamTable.hV_p(p4)+(1-x4)*steamTable.hL_p(p4)
+    # print(h4,h42,'here h')
     s4 = steamTable.s_ph(p4,h4)
     T4 = steamTable.t_ph(p4,h4)+273.15#K
+    e4 = h4-T0*s4 #kJ/kg#kJ/kg
 
     """
     4) Condenser
     """
+    print(T_cond_out-T_ext)
     Q2 = h4-h1 # kJ/kg_v
+    massflow_condenser_coeff = Q2/(steamTable.CpL_t(T_cond_out-273.15)*(T_cond_out-T_ext))
+    # h_lv = steamTable.hV_t(T4-273.15)-steamTable.hL_t(T4-273.15)
+    # print(h_lv)
+    # Cpl = steamTable.CpL_t(T1-273.15)
+    # print(h_lv+Cpl*(T4-T1),Q2,"here")
+    # print('Cpl',Cpl,steamTable.CpL_t(T1-273.15))
 
     """
     5) Mechanical work:
@@ -238,10 +248,10 @@ def ST(ST_inputs):
     eta_cyclen = Wm/Q1
 
     mv = Pe/(Wm*eta_mec) #kg_v/s
-    print(mv,'mv')
+    print('mv',mv)
     eta_gen = 0
     eta_toten = 0
-    Q_boiler = mv*Q1
+    Q_boiler = mv*Q1 #kW
 
     """
     7) Boiler combustion and heat recovery
@@ -256,8 +266,12 @@ def ST(ST_inputs):
     8) Computation of energy losses :
     """
     P_cond = Q2*mv#kW
-    P_mec = Pe-Wm*mv
-    P_gen = 0
+    Pf_mec = Wm*mv-Pe
+    P_boiler = Q_boiler
+    P_chimney = boiler_outputs.P_chimney
+    P_prim = P_boiler+P_chimney #-P_air_in mais =0 = +/- LHV*mc
+    print("energie chequ up",P_prim,P_chimney+Pf_mec+P_cond+Pe)
+    print("P_chimney",P_chimney,"Q_boiler",Q_boiler,"P_cond",P_cond,"Pf_mec",Pf_mec,"Pe",Pe)
     """
     9) Exergy efficiencies
     """
@@ -273,8 +287,8 @@ def ST(ST_inputs):
     """
     outputs = ST_arg.ST_outputs();
     outputs.eta[0:]= [eta_cyclen,eta_toten,eta_cyclex,eta_totex,eta_gen,eta_gex,eta_combex,eta_chemex,eta_condex,eta_transex]
-    outputs.daten[0:]=[P_gen, P_mec, P_cond]
-    outputs.dat[0:]= [[T1-273.15,T2-273.15,T3-273.15,T4-273.15],[p1,p2,p3,p4],[h1,h2,h3,h4],[s1,s2,s3,s4],[0,0,0,0],[x1,x2,x3,x4]]
+    outputs.daten[0:]=[P_chimney, Pf_mec, P_cond]
+    outputs.dat[0:]= [[T1-273.15,T2-273.15,T3-273.15,T4-273.15],[p1,p2,p3,p4],[h1,h2,h3,h4],[s1,s2,s3,s4],[e1,e2,e3,e4],[x1,x2,x3,x4]]
     outputs.massflow = boiler_outputs.boiler_massflow #[ma,0,mc,mf]
     outputs.massflow[1] = mv
 
@@ -297,3 +311,5 @@ ST_inputs = ST_arg.ST_inputs();
 results = ST(ST_inputs);
 print(results.dat)
 print(results.combustion.Lambda)
+print(results.massflow)
+print("eta_cyclen",results.eta[0])

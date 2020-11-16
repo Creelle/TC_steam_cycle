@@ -130,11 +130,11 @@ def cp_Iconstants(M,T_0,T_1):
         I = heat_const[3]*(T_1-T_0) + (1/2)*heat_const[2]*(T_1**2-T_0**2) + (1/3)*heat_const[1]*(T_1**3-T_0**3) + (1/4)*heat_const[0]*(T_1**4-T_0**4)
         #je retourne l'intégrale
     return I,cp_mean,heat_const
-T_null = 0.1
-T_reference = 298.15
-dt = 0.1
-LHV = (CO2.DeltaH(273.15)+2*H2O.DeltaH(273.15)-CH4.DeltaH(273.15)-2*O2.DeltaH(273.15))/0.016
-HHV = LHV-2*40752/0.016
-print(HHV/1000)
-LHV = (CO2.DeltaH(273.15)-0.5*O2.DeltaH(273.15)-CO.DeltaH(273.15))/0.028
-print(LHV/1000)
+# T_null = 0.1
+# T_reference = 298.15
+# dt = 0.1
+# LHV = (CO2.DeltaH(273.15)+2*H2O.DeltaH(273.15)-CH4.DeltaH(273.15)-2*O2.DeltaH(273.15))/0.016
+# HHV = LHV-2*40752/0.016
+# print(HHV/1000)
+# LHV = (CO2.DeltaH(273.15)-0.5*O2.DeltaH(273.15)-CO.DeltaH(273.15))/0.028
+# print(LHV/1000)

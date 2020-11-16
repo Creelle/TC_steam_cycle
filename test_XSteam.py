@@ -21,6 +21,7 @@ print(steamTable.CpL_t(15))
 # get T° from other data
 #Saturation pressure at 100°C : 1.014 bar
 print(steamTable.psat_t(100))
-
+print(steamTable.hV_t(100)-steamTable.hL_t(100))
+print(steamTable.CpL_t(15),steamTable.CvL_t(15),steamTable.CpL_t(25))
 #les inputs et outputs de XSteam sont en °C
 # ...

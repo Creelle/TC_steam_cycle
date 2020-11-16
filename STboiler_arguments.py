@@ -27,8 +27,8 @@ class boiler_input:
                      LHV =50150,
                      ftype = "CH4",
                      T_ext = 15,#°C
-                     T_exhaust = 200,#°C
-                     TpinchHR = 150,#°C
+                     T_exhaust = 150,#°C
+                     TpinchHR = 80,#°C
                      x = 0,
                      y = 4,
                      Q=3361*31):# [kW]
@@ -80,6 +80,7 @@ class boiler_output:
                      T_cold_in = 15,#T_atmospherique
                      T_cold_out= 50,# T_a before combustion
                      T_dew = 2,# °C
+                     P_chimney = 1, #kW
                      eta_transex=0.5):
 
         self.m_O2f = m_O2f;
@@ -101,6 +102,8 @@ class boiler_output:
         self.T_cold_in = T_cold_in;
         self.T_cold_out = T_cold_out;
         self.T_dew = T_dew;
+
+        self.P_chimney = P_chimney
 
         self.eta_transex = eta_transex;
 
