@@ -62,13 +62,14 @@ def boiler(STboiler_input):
     HHV = LHV
     if y!=0:
         HHV = LHV + (y/2)*40.752/Mm_f #[kJ/kg_fuel] --> we're adding the latent heat of water.
+    print("here",LHV)
 
     """
     1) Calcul de la combustion sans préchauffage :
     """
 
     #at the entering of the combustion
-    molar_mass = np.array([0.028,0.044,0.018,0.032]) #kg/mol N2- CO2 - H2O - O2
+    molar_mass = np.array([Mm_N2,Mm_CO2,Mm_H2O,Mm_O2]) #kg/mol N2- CO2 - H2O - O2
     Mm_a = xO2a * Mm_O2 + xN2a * Mm_N2 # [kg/mol_air]
     ma1 =  Mm_a/Mm_f * (1 + (y-2*x)/4)/xO2a # kg_air/kg_CH4 = proportion of air  vs combustible
     mass_conc0 = np.array([xN2a,0,0,xO2a])*molar_mass/Mm_a

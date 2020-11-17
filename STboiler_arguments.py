@@ -25,12 +25,11 @@ class boiler_input:
                      T_out = 1400, #°Cpour trouver lambda en fonction de T_out mettre true
                      HHV = 55695, # [kJ/kg_CH4],
                      LHV =50150,
-                     ftype = "CH4",
                      T_ext = 15,#°C
                      T_exhaust = 150,#°C
                      TpinchHR = 80,#°C
                      x = 0,
-                     y = 4,
+                     y =4,
                      Q=3361*31):# [kW]
         # combustion
         self.Lambda = Lambda;
@@ -39,7 +38,6 @@ class boiler_input:
         self.T_in = T_in;
         self.inversion = inversion;
         self.T_out = T_out;
-        self.ftype = ftype;
         self.HHV = HHV;
         self.LHV = LHV;
         self.x = x

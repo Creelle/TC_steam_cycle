@@ -21,12 +21,12 @@ des autres combustibles==>ok ==> faire avec DelataH et enlever les hc
 OBJECTIVE S9: terminer le boiler et condenser
 A faire :
 boiler : ==> Gwenael
-- reussir a faire un string digestible parjanaf en utilisant les x et y
-- creer LHV et HHV qui prend en entrée les x et y
+- reussir a faire un string digestible par janaf en utilisant les x et y
+- creer LHV et HHV qui prend en entrée les x et y ==>okay
 - modifier les coefficient stochio
 
 boiler:==> Robbe , envoyé  mail pour le Tpinch
-- regarder pour le condenser
+- regarder pour le condenser ==> okay mais pas pour les cooling water
 
 Des que c est fait:
 faire l exergie de base + pychart
