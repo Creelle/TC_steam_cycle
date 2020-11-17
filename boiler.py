@@ -101,11 +101,11 @@ def boiler(STboiler_input):
         if (inversion == True):
             #Lambda = 2 # first estimation
             while iter <50 and error > 0.01 :
-                coeff_stochio = np.array([2*Lambda*coeff,1,2,2*(Lambda-1)]) # N2- CO2 - H2O - O2
+                coeff_stochio = np.array([(1 + (y-2*x)/4)*Lambda*coeff,1,y/2,(1 + (y-2*x)/4)*(Lambda-1)]) # N2- CO2 - H2O - O2
                 total_n = sum(coeff_stochio) # total moles
-                molar_conc = coeff_stochio/total_n # concentration of elements mol_co2/mol_tot
-                Mm_af = sum(molar_conc*molar_mass)
-                mass_conc = molar_conc*molar_mass/Mm_af
+                molar_conc = coeff_stochio/total_n # concentration of elements
+                Mm_af = sum(molar_conc*molar_mass) #kg/mol_air
+                mass_conc = molar_conc*molar_mass/Mm_af #[-] kg_co2/kg_tot
 
                 cp_f = useful.cp_mean_air(useful.cp_air,mass_conc,Mm_af,T0,T_out,dt)
                 h_f0 = useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T0-15,T0,dt)
