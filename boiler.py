@@ -165,7 +165,7 @@ def boiler(STboiler_input):
     outputs.T_hot_in = T_hot_in-273.15 #°C
 
     outputs.P_chimney = hair_out*massflow_f#kW
-    print('eta_gen',Q/(Q+hair_out*massflow_f))
+    print('eta_gen',Q/(LHV*massflow_c+massflow_a*hair_in))
 
     outputs.boiler_massflow[0:]= [massflow_a,0,massflow_c,massflow_f]
 

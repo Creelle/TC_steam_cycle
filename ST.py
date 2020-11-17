@@ -270,6 +270,7 @@ def ST(ST_inputs):
     P_boiler = Q_boiler
     P_chimney = boiler_outputs.P_chimney
     P_prim = P_boiler+P_chimney #-P_air_in mais =0 = +/- LHV*mc
+    P_prim = boiler_outputs.LHV*mc
     print("energie chequ up",P_prim,P_chimney+Pf_mec+P_cond+Pe)
     print("P_chimney",P_chimney,"Q_boiler",Q_boiler,"P_cond",P_cond,"Pf_mec",Pf_mec,"Pe",Pe)
     """
