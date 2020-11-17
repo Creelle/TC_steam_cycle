@@ -60,7 +60,7 @@ def boiler(STboiler_input):
     #at the entering of the combustion
     molar_mass = np.array([Mm_N2,Mm_CO2,Mm_H2O,Mm_O2]) #kg/mol N2- CO2 - H2O - O2
     Mm_a = xO2a * Mm_O2 + xN2a * Mm_N2 # [kg/mol_air]
-    ma1 =  Mm_a/Mm_f * 2/xO2a # kg_air/kg_CH4 = proportion of air  vs combustible
+    ma1 =  Mm_a/Mm_f * (1 + (y-2*x)/4)/xO2a # kg_air/kg_CH4 = proportion of air  vs combustible
     mass_conc0 = np.array([xN2a,0,0,xO2a])*molar_mass/Mm_a
 
     # At the exit of the combustion:
