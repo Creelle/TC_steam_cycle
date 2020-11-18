@@ -126,7 +126,7 @@ def boiler(STboiler_input):
         """
         3) From the massflow, calculate a new T_in
         """
-    
+
         Cp_f = useful.cp_mean_air(useful.cp_air,mass_conc,Mm_af,T_exhaust,T_in+TpinchHR,dt)
         Cp_a = useful.cp_mean_air(useful.cp_air,mass_conc0,Mm_a,T_ext,T_in,dt)
         T_in_new = (massflow_f*Cp_f*T_exhaust-massflow_f*Cp_f*TpinchHR-massflow_a*Cp_a*T_ext)/(massflow_f*Cp_f-massflow_a*Cp_a)
@@ -184,6 +184,7 @@ def boiler(STboiler_input):
     6) Calculation of exergetic efficiencies
     """
     eta_combex = (massflow_f*e_f-massflow_a*e_air_in)/(massflow_c*ec)
+    eta_chemex = (e_f-e_f_out)*massflow_f/(massflow_f*e_f-massflow_a*e_air_in)
     eta_transex_HR = -(e_air_in-e_air_ext)/(e_f_exhaust-e_f_out)
 
     #les pertes dans le boiler seront comptés dans ST.py
@@ -207,6 +208,7 @@ def boiler(STboiler_input):
     outputs.eta_gen = Q/(LHV*massflow_c+massflow_a*hair_ext)
     outputs.eta_combex = eta_combex
     outputs.eta_transex_HR =eta_transex_HR
+    outputs.eta_chemex =eta_chemex
 
     outputs.L_comb=L_comb
     outputs.L_HR =L_HR
@@ -217,7 +219,7 @@ def boiler(STboiler_input):
 
     outputs.boiler_massflow[0:]= [massflow_a,0,massflow_c,massflow_f]
 
-
+    
     return outputs
 
 results = boiler(STboiler_arg.boiler_input(inversion=True))

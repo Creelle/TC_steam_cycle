@@ -85,7 +85,8 @@ class boiler_output:
                      e_boiler_in = 1,
                      e_boiler_out = 1,
                      eta_gen = 1,
-                     eta_transex=0.5):
+                     eta_chemex = 1,
+                     eta_transex_HR=0.5):
 
         self.m_O2f = m_O2f;
         self.m_N2f = m_N2f ;
@@ -113,8 +114,9 @@ class boiler_output:
         self.L_exhaust = L_exhaust
 
         self.eta_gen = eta_gen
-        self.eta_transex = eta_transex;
+        self.eta_transex_HR = eta_transex_HR;
         self.eta_combex = eta_combex;
+        self.eta_chemex = eta_chemex;
 
         self.e_boiler_in = e_boiler_in
         self.e_boiler_out = e_boiler_out
