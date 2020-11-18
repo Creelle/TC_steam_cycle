@@ -83,10 +83,10 @@ def ST(ST_inputs):
         Pe = 250e3;#250 kWe
     nsout = arg_in.nsout;
     if nsout ==-1.:
-        nsout = 1;#15°C
+        nsout = 0;#15°C
     reheat = arg_in.reheat
     if reheat == -1:
-        reheat = 1.;# Number of reheating
+        reheat = 0;# Number of reheating
     T_max = arg_in.T_max;
     if T_max == -1.:
         T_max = 520 #°C
@@ -116,7 +116,7 @@ def ST(ST_inputs):
         T_exhaust = 150 #°C
     p4 = arg_in.p4;
     if p4 == -1.:
-        p4 = 0.0503 #bar
+        p4 = 20 #bar
     x6 = arg_in.x6;
     if x6 == -1.:
         x6 = 0.91 #[-]
@@ -155,6 +155,8 @@ def ST(ST_inputs):
 
     # Put all temperatures in Kelvin
     T_max,T_cond_out, T_exhaust, T0, T_ext, T_drum= T_max+273.15,T_cond_out+273.15, T_exhaust+273.15, T0+273.15, T_ext+273.15, Tdrum +273.15 #K
+
+    results = np.zeros((6,5+2*nsout+2*reheat)) # 6 initial states, states 1,2,3,6,7 if no reheat then 7 = 1 states 4 and 5 is for the reheating
     ## cycle definition
     # =================
     # Your job
@@ -184,6 +186,7 @@ def ST(ST_inputs):
     x1 = 0
     v1 = steamTable.vL_p(p1)
     e1 = h1-T0*s1#kJ/kg
+    results[:,0]=T1-273.15,p1,h1,s1,x1,e1
 
     p2=p3_hp#bar
     #s2=s1
@@ -194,6 +197,7 @@ def ST(ST_inputs):
     s2 = steamTable.s_ph(p2,h2)
     x2= None # eau non saturée
     e2 = h2-T0*s2#kJ/kg
+    results[:,1]=T2-273.25,p2,h2,s2,x2,e2
 
     """
     2) Boiler
@@ -206,6 +210,7 @@ def ST(ST_inputs):
     s3=steamTable.s_pt(p3,T3-273.15)
     x3 = None # vapeur surchauffée
     e3 = h3-T0*s3#kJ/kg
+    results[:,2]=T3-273.35,p3,h3,s3,x3,e3
 
     Q1 = h3-h2 #kJ/kg_v
 
@@ -213,44 +218,48 @@ def ST(ST_inputs):
     3) Turbine
     """
 
-    p4=p4
-    h4s = steamTable.h_ps(p4,s3)
-    h42= h3-(h3-h4s)*eta_SiT
-    x4 = x6
-    h4 = x4*steamTable.hV_p(p4)+(1-x4)*steamTable.hL_p(p4)
-    # print(h4,h42,'here h')
-    s4 = steamTable.s_ph(p4,h4)
-    T4 = steamTable.t_ph(p4,h4)+273.15#K
-    e4 = h4-T0*s4 #kJ/kg#kJ/kg
+    p6=p1
+    h6s = steamTable.h_ps(p1,s3)
+    h62= h3-(h3-h6s)*eta_SiT
+    x6=x6
+    h6 = x6*steamTable.hV_p(p6)+(1-x6)*steamTable.hL_p(p6)
+    s6 = steamTable.s_ph(p6,h6)
+    s62 = x6*steamTable.sV_p(p6)+(1-x6)*steamTable.sL_p(p6)
+    T6 = steamTable.t_ph(p6,h6)+273.15#K
+    e6 = h6-T0*s6 #kJ/kg#kJ/kg
+    results[:,3]=T6-273.65,p6,h6,s6,x6,e6
 
     """
     4) Condenser
     """
-    print(T_cond_out-T_ext)
-    Q2 = h4-h1 # kJ/kg_v
+    Q2 = h6-h1 # kJ/kg_v
     massflow_condenser_coeff = Q2/(steamTable.CpL_t(T_cond_out-273.15)*(T_cond_out-T_ext))
+
+    h_cond_water_in = steamTable.h_pt(1.01325,T_ext-273.15)
+    h_cond_water_out = steamTable.h_pt(1.01325,T_cond_out-273.15)
+    s_cond_water_in = steamTable.s_pt(1.01325,T_ext-273.15)
+    s_cond_water_out = steamTable.s_pt(1.01325,T_cond_out-273.15)
+    e_cond_water_in = h_cond_water_in-T0*s_cond_water_in
+    e_cond_water_out = h_cond_water_out-T0*s_cond_water_out
+
     # h_lv = steamTable.hV_t(T4-273.15)-steamTable.hL_t(T4-273.15)
     # print(h_lv)
     # Cpl = steamTable.CpL_t(T1-273.15)
-    # print(h_lv+Cpl*(T4-T1),Q2,"here")
+    # print(h_lv+Cpl*(T6-T1),Q2,"here")
     # print('Cpl',Cpl,steamTable.CpL_t(T1-273.15))
+    results[:,4]=T1-273.15,p1,h1,s1,x1,e1
 
     """
     5) Mechanical work:
     """
-    Wm_t = h3-h4
+    Wm_t = h3-h6
     Wm_c = h2-h1
     Wm = Wm_t-Wm_c
 
     """
-    6) Cycle efficiency and massflows
+    6) massflows
     """
-    eta_cyclen = Wm/Q1
-
     mv = Pe/(Wm*eta_mec) #kg_v/s
-    print('mv',mv)
-    eta_gen = 0
-    eta_toten = 0
     Q_boiler = mv*Q1 #kW
 
     """
@@ -263,18 +272,25 @@ def ST(ST_inputs):
     ma,dummy,mc,mf = boiler_outputs.boiler_massflow[0:]
 
     """
-    8) Computation of energy losses :
+    8) Energetic efficiencies
+    """
+    eta_cyclen = Wm/Q1
+    eta_gen = boiler_outputs.eta_gen
+    eta_toten = eta_mec*eta_gen*eta_cyclen
+
+    """
+    9) Computation of energy losses :
     """
     P_cond = Q2*mv#kW
     Pf_mec = Wm*mv-Pe
     P_boiler = Q_boiler
     P_chimney = boiler_outputs.P_chimney
-    P_prim = P_boiler+P_chimney #-P_air_in mais =0 = +/- LHV*mc
+    #P_prim = P_boiler+P_chimney #-P_air_in mais =0 = +/- LHV*mc
     P_prim = boiler_outputs.LHV*mc
     print("energie chequ up",P_prim,P_chimney+Pf_mec+P_cond+Pe)
     print("P_chimney",P_chimney,"Q_boiler",Q_boiler,"P_cond",P_cond,"Pf_mec",Pf_mec,"Pe",Pe)
     """
-    9) Exergy efficiencies
+    10) Exergy efficiencies
     """
     eta_cyclex =0
     eta_totex =0
@@ -284,21 +300,50 @@ def ST(ST_inputs):
     eta_condex = 0
     eta_transex =0
     """
+    11) Computation of exergy losses
+    """
+    L_comb = boiler_outputs.L_comb #kW
+    L_HR = boiler_outputs.L_HR
+    L_exhaust = boiler_outputs.L_exhaust
+
+    e_boiler_in = boiler_outputs.e_boiler_in
+    e_boiler_out = boiler_outputs.e_boiler_out#kJ/kg_f
+
+    L_boiler = mv*(e2-e3)+mf*(e_boiler_in-e_boiler_out)
+
+    L_turbine = T0*(s6-s3)*mv
+    L_pump = T0*(s2-s1)*mv#kW
+
+    L_cond=mv*(e6-e1)+mv*massflow_condenser_coeff*(e_cond_water_in-e_cond_water_out)
+
+    #Il manque ce qui sort de la tour de refroidissement
+
+    ec = boiler_outputs.e_c
+    print('exegie chequ up', ec*mc,Pe+Pf_mec+L_turbine+L_pump+L_boiler+L_cond+L_exhaust+L_HR+L_comb)
+    """
     Last) Define output arguments
     """
     outputs = ST_arg.ST_outputs();
     outputs.eta[0:]= [eta_cyclen,eta_toten,eta_cyclex,eta_totex,eta_gen,eta_gex,eta_combex,eta_chemex,eta_condex,eta_transex]
     outputs.daten[0:]=[P_chimney, Pf_mec, P_cond]
-    outputs.dat[0:]= [[T1-273.15,T2-273.15,T3-273.15,T4-273.15],[p1,p2,p3,p4],[h1,h2,h3,h4],[s1,s2,s3,s4],[e1,e2,e3,e4],[x1,x2,x3,x4]]
+    outputs.dat= results
     outputs.massflow = boiler_outputs.boiler_massflow #[ma,0,mc,mf]
     outputs.massflow[1] = mv
 
     #combustion
     outputs.combustion.LHV = boiler_outputs.LHV #[kJ/kg_f]
-    outputs.combustion.e_c = 1
+    outputs.combustion.e_c = ec
     outputs.combustion.Lambda = boiler_outputs.Lambda
-    outputs.combustion.Cp_g = boiler_outputs.Cp_g
+    outputs.combustion.Cp_g = boiler_outputs.Cp_g # [kJ/kg/K]
     outputs.combustion.fum =np.array([boiler_outputs.m_O2f,boiler_outputs.m_N2f,boiler_outputs.m_CO2f,boiler_outputs.m_H2Of])*mf
+
+    #heat recovery
+    outputs.HR.T_hot_in = boiler_outputs.T_hot_in
+    outputs.HR.T_hot_out = boiler_outputs.T_hot_out
+    outputs.HR.T_cold_in = boiler_outputs.T_cold_in
+    outputs.HR.T_cold_out = boiler_outputs.T_cold_out
+    outputs.HR.T_dew = boiler_outputs.T_dew #still gave to define
+
     return outputs;
 
 # Example:
@@ -309,8 +354,5 @@ def ST(ST_inputs):
 
 
 ST_inputs = ST_arg.ST_inputs();
-results = ST(ST_inputs);
-print(results.dat)
-print(results.combustion.Lambda)
-print(results.massflow)
-print("eta_cyclen",results.eta[0])
+answers = ST(ST_inputs);
+print(answers.dat)

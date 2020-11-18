@@ -12,7 +12,6 @@ N2 = db.getphasedata('N2','g');
 CO2 = db.getphasedata('CO2',phase ='g');
 H2O = db.getphasedata('H2O',phase ='g');
 CH4=db.getphasedata('CH4',phase ='g');
-CO = db.getphasedata('CO',phase ='g');
 Mm_O2 = 0.032;#kg/mol
 Mm_N2 = 0.028;#kg/mol
 conc_O2 = 0.21;# 21% in molar
@@ -102,7 +101,7 @@ def janaf_integrate(f,T1,T2,dt):
 cp_Iconstants takes a compound and a temperature interval.
 It interpolates a lot of cp of the compound into this interval by a third degree polynomial.
 Once all the coefficients of the polynomial have been found, the integration is calculated.
-It returns I the integration ,cp_mean (not used) and the coefficient of integration.
+It returns I the integration ,cp_mean (not used) and the coefficient of integration. 
 """
 def cp_Iconstants(M,T_0,T_1):
     # donne la valeur de cp en J/mol.
@@ -130,11 +129,3 @@ def cp_Iconstants(M,T_0,T_1):
         I = heat_const[3]*(T_1-T_0) + (1/2)*heat_const[2]*(T_1**2-T_0**2) + (1/3)*heat_const[1]*(T_1**3-T_0**3) + (1/4)*heat_const[0]*(T_1**4-T_0**4)
         #je retourne l'intégrale
     return I,cp_mean,heat_const
-# T_null = 0.1
-# T_reference = 298.15
-# dt = 0.1
-# LHV = (CO2.DeltaH(273.15)+2*H2O.DeltaH(273.15)-CH4.DeltaH(273.15)-2*O2.DeltaH(273.15))/0.016
-# HHV = LHV-2*40752/0.016
-# print(HHV/1000)
-# LHV = (CO2.DeltaH(273.15)-0.5*O2.DeltaH(273.15)-CO.DeltaH(273.15))/0.028
-# print(LHV/1000)

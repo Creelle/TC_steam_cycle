@@ -11,16 +11,16 @@ import numpy;
 class ST_inputs:
     """
     INPUTS (some inputs can be dependent on others => only one of these 2 can
-             be activated). Refer to Fig 2.33 from reference book (in english)
+             be activated). Refer to Fig 2.33 from reference book (in english) 
      P_E = electrical power output target [kW]
-     nsout     [-] : Number of feed-heating
+     nsout     [-] : Number of feed-heating 
      reheat    [-] : Number of reheating
      T_max     [°C] : Maximum steam temperature
      T_cond_out[°C] : Condenser cold outlet temperature
      p3_hp     [bar] : Maximum pressure
-     drumFlag  [-] : if =1 then drum if =0 then no drum.
+     drumFlag  [-] : if =1 then drum if =0 then no drum. 
      eta_mec   [-] : mechanic efficiency of shafts bearings
-     comb is a class containing combustion data :
+     comb is a class containing combustion data : 
            -comb.Tmax     [°C] : maximum combustion temperature
            -comb.Lambda   [-] : air excess
            -comb.x        [-] : the ratio O_x/C. Example 0.05 in CH_1.2O_0.05
@@ -32,7 +32,7 @@ class ST_inputs:
      T_ext     [°C] : External temperature (atmospheric)
      TpinchSub [°C] : Temperature pinch at the subcooler
      TpinchEx  [°C] : Temperature pinch at a heat exchanger
-     TpinchCond[°C] : Temperature pinch at condenser
+     TpinchCond[°C] : Temperature pinch at condenser 
      TpinchHR  [°C] : Temperature pinch at the heat recovery system
      Tdrum     [°C] : minimal drum temperature
      eta_SiC    [-] : Internal pump efficiency
@@ -40,24 +40,24 @@ class ST_inputs:
                                 eta_SiT(1)=eta_SiT_HP,eta_SiT(2)=eta_SiT_others
      DISPLAY = 1 or 0. If 1, then the code should plot graphics. If 0, then do not plot.
      """
-
+    
     class Combustion:
         def __init__(self):
             self.Tmax   =-1.;#   [°C] : maximum combustion temperature
             self.Lambda =-1.;#   [-] : air excess
             self.x      =-1.;#   [-] : the ratio O_x/C. Example 0.05 in CH_1.2O_0.05
             self.y      =-1.;#   [-] : the ratio H_y/C. Example 1.2 in CH_1.2O_0.05
-
+    
     def __init__(self, comb = Combustion()):
-        self.Pe = 35.0e3;# 250e3 [kW]
-        self.nsout = -1.;# Number of feed-heating
+        self.Pe = 250.0e3;# 250e3 [kW]
+        self.nsout = -1.;# Number of feed-heating 
         self.reheat = -1.;# Number of reheating
         self.T_max = -1.;# Maximum steam temperature
         self.T_cond_out = -1.;# Condenser cold outlet temperature
         self.p3_hp  = -1.;# Maximum pressure
-        self.drumFlag = -1.;# if =1 then drum if =0 then no drum.
+        self.drumFlag = -1.;# if =1 then drum if =0 then no drum. 
         self.eta_mec = -1.;# mechanic efficiency of shafts bearings
-        self.combustion = comb;
+        self.combustion = comb;        
         self.T_exhaust = -1.;# Temperature of exhaust gas out of the chimney
         self.p4       = -1.;# High pressure after last reheating
         self.x6       = -1.;# Vapor ratio [gaseous/liquid] (in french : titre)
@@ -65,16 +65,16 @@ class ST_inputs:
         self.T_ext    = -1.;# External temperature (atmospheric)
         self.TpinchSub = -1.;# Temperature pinch at the subcooler
         self.TpinchEx  = -1.;# Temperature pinch at a heat exchanger
-        self.TpinchCond = -1.;# Temperature pinch at condenser
+        self.TpinchCond = -1.;# Temperature pinch at condenser 
         self.TpinchHR   = -1.;# Temperature pinch at the heat recovery system
         self.Tdrum      = -1.;# minimal drum temperature
         self.eta_SiC    = -1.;# Internal pump efficiency
         self.eta_SiT    = -1.;# Isotrenpic efficiency for Turbines.
         self.DISPLAY = -1;
-
+    
 class ST_outputs:
     """
-     OUPUTS :
+     OUPUTS : 
      ETA is a vector with :
        -eta(1) : eta_cyclen, cycle energy efficiency
        -eta(2) : eta_toten, overall energy efficiency
@@ -87,10 +87,10 @@ class ST_outputs:
        -eta(9) : eta_condex, Condenser exergy efficiency
        -eta(10): eta_transex, Steam bleeding heat exchanger overall exergy efficiency
        FYI : eta(i) \in [0;1] [-]
-     Xmassflow is a vector with each feedheating massflow [kg/s] (with respect to figure
+     Xmassflow is a vector with each feedheating massflow [kg/s] (with respect to figure 
                2.33, page 91 "Thermal Power Plants" English version).
                Xmassflow(1) = mass flow at 6_1 etc...
-     DATEN is a vector with :
+     DATEN is a vector with : 
        -daten(1) : perte_gen [kW]
        -daten(2) : perte_mec [kW]
        -daten(3) : perte_cond [kW]
@@ -109,12 +109,12 @@ class ST_outputs:
             s_1       , s_2       , ...       , s_6_I,     s_6_II, ... ;  [kJ/kg/K]
             e_1       , e_2       , ...       , e_6_I,     e_6_II, ... ;  [kJ/kg]
             x_1       , x_2       , ...       , x_6_I,     x_6_II, ... ;   };[-]
-     MASSFLOW is a vector containing :
+     MASSFLOW is a vector containing : 
        -massflow(1) = m_a, air massflow [kg/s]
        -massflow(2) = m_v, water massflow at 2 [kg/s]
-       -massflow(3) = m_c, combustible massflow [kg/s]
+       -massflow(3) = m_c, combustible massflow [kg/s] 
        -massflow(4) = m_f, exhaust gas massflow [kg/s]
-
+     
      COMBUSTION is a structure with :
        -combustion.LHV    : the Lower Heat Value of the fuel [kJ/kg]
        -combustion.e_c    : the combustible exergie         [kJ/kg]
@@ -124,8 +124,8 @@ class ST_outputs:
            -fum(1) = m_O2f  : massflow of O2 in exhaust gas [kg/s]
            -fum(2) = m_N2f  : massflow of N2 in exhaust gas [kg/s]
            -fum(3) = m_CO2f : massflow of CO2 in exhaust gas [kg/s]
-           -fum(4) = m_H2Of : massflow of H2O in exhaust gas [kg/s]
-
+           -fum(4) = m_H2Of : massflow of H2O in exhaust gas [kg/s] 
+    
      HEAT_RECOVERED is a structure containing:
        - heat_recovered.T_hot_in   : inlet  temperature of exhaust gases after exchangers with cycle [°C]
        - heat_recovered.T_hot_out  : outlet temperature of exhaust gases after exchangers with cycle [°C]
@@ -135,12 +135,12 @@ class ST_outputs:
      According Fig 2.2 in reference book (english version):
             T_hot_in = T_b
             T_hot_out = T_c
-            T_cold_in = T_atmospheric
+            T_cold_in = T_atmospheric 
             T_cold_out = T_a (assuming state 'a' before mixture with fuel)
-
-
+    
+    
      FIG is a vector of all the figure you plot. Before each figure, define a
-     figure environment such as:
+     figure environment such as:  
       "FIG(1) = figure;
       plot(x,y1);
       [...]
@@ -157,7 +157,7 @@ class ST_outputs:
             self.Lambda =-1.; #   [-]
             self.Cp_g =-1.; #  [kJ/kg/K]
             self.fum = numpy.zeros(4);
-
+            
     class Heat_recovery:
         def __init__(self):
             self.T_hot_in   = -1.; # [kJ/kg]
@@ -165,8 +165,8 @@ class ST_outputs:
             self.T_cold_in  = -1.; #   [-]
             self.T_cold_out = -1.; #  [kJ/kg/K]
             self.T_dew      = -1.;
-
-    def __init__(self, comb = Combustion()):
+            
+    def __init__(self, comb = Combustion(), heat_recovery = Heat_recovery()):
         self.eta = numpy.zeros(10); # [-] \in [0,1]
         self.Xmassflow = list();# must be defined by the user # [kg/s]
         self.daten = numpy.zeros(3);# [kW]
@@ -175,3 +175,4 @@ class ST_outputs:
         self.massflow = numpy.zeros(4); # must be defined by the user
         self.combustion = comb;
         self.fig = list();
+        self.HR = heat_recovery

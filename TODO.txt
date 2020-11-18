@@ -1,35 +1,25 @@
 TO DO LIST
 
-S8 à faire :
-- (faire les exercices donnés par le tuteur)==>ok
-- créer TCsteam_argument : cycle_argument + boiler_argument==> argument
-- faire un rankine hirn de base ==> a faire immediatement
 
-- boiler.py --> faire un echangeur de chaleur simple
 
-S9:
-- ecrire une question: janaf est ce qu on peut l 'utiliser pour la combustion, Qu en est il es HHV/LHV
-des autres combustibles==>ok ==> faire avec DelataH et enlever les hc
-
-- ecrire le rankine Hirn de base ==>ok
-- ecrire pour demander pourquoi l exergie est nulle alors que h-288.15*s n est pas egale a zero
-- Boiler :  faire l'implementation de base
-- essayer de faire le Boiler:
-    sans heat Heat_recovery
-    avec en bouclant
-
-OBJECTIVE S9: terminer le boiler et condenser
+OBJECTIVE S10: feedheating de base
 A faire :
-boiler : ==> Gwenael
-- reussir a faire un string digestible par janaf en utilisant les x et y
-- creer LHV et HHV qui prend en entrée les x et y ==>okay
-- modifier les coefficient stochio
+ - implementer l exergie pour le cycle de base (ROBBE)
+ - Trouver les flux massiques pour un fead heater  (GWENAEL)
+ - rajouter les etats nécessaires pour respecter la convention fixé (ROBBE)
+ - calculer les pertes au nouveau enchangeur de chaleur(celui du feed heater)
+ -
 
-boiler:==> Robbe , envoyé  mail pour le Tpinch
-- regarder pour le condenser ==> okay mais pas pour les cooling water
+A faire apres:
+- essayer de mettre plusieurs feed heater avec plusieurs feed heater
 
-Des que c est fait:
-faire l exergie de base + pychart
+Idees pour apres :
+
+- Faire le reheating independamment
+- Integrer fead heating avec preheating
+- Rajouter drum : choisir ou se trouve les feedheating par rapport au drum S12)
+- Faire les graphiques pour la ST (S12)
+- Le rapport + tout mettre en ordre (S13)
 
 
 Avant de s attaquer au bleed et feed heating, faire l analyse d exergie

@@ -79,6 +79,12 @@ class boiler_output:
                      T_cold_out= 50,# T_a before combustion
                      T_dew = 2,# °C
                      P_chimney = 1, #kW
+                     L_comb = 1,
+                     L_HR =1,
+                     L_exhaust = 1,
+                     e_boiler_in = 1,
+                     e_boiler_out = 1,
+                     eta_gen = 1,
                      eta_transex=0.5):
 
         self.m_O2f = m_O2f;
@@ -102,8 +108,16 @@ class boiler_output:
         self.T_dew = T_dew;
 
         self.P_chimney = P_chimney
+        self.L_comb = L_comb
+        self.L_HR = L_HR
+        self.L_exhaust = L_exhaust
 
+        self.eta_gen = eta_gen
         self.eta_transex = eta_transex;
+        self.eta_combex = eta_combex;
+
+        self.e_boiler_in = e_boiler_in
+        self.e_boiler_out = e_boiler_out
 
 # class exchanger_input:
 #     """

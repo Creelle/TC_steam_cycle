@@ -51,7 +51,6 @@ def boiler(STboiler_input):
     HHV = LHV
     if y!=0:
         HHV = LHV + (y/2)*40.752/Mm_f #[kJ/kg_fuel] --> we're adding the latent heat of water.
-    print("here",LHV)
 
     """
     1) Calcul de la combustion sans préchauffage :
@@ -127,11 +126,10 @@ def boiler(STboiler_input):
         """
         3) From the massflow, calculate a new T_in
         """
-        print(TpinchHR,TpinchHR)
+    
         Cp_f = useful.cp_mean_air(useful.cp_air,mass_conc,Mm_af,T_exhaust,T_in+TpinchHR,dt)
         Cp_a = useful.cp_mean_air(useful.cp_air,mass_conc0,Mm_a,T_ext,T_in,dt)
         T_in_new = (massflow_f*Cp_f*T_exhaust-massflow_f*Cp_f*TpinchHR-massflow_a*Cp_a*T_ext)/(massflow_f*Cp_f-massflow_a*Cp_a)
-        print('here',T_in_new,T_ext,T_exhaust,T_in+TpinchHR)
         error2 = abs(T_in-T_in_new)
         iter2+=1
         if iter2 ==100:
@@ -144,11 +142,51 @@ def boiler(STboiler_input):
     """
     4)  calcul des puissances
     """
-    hair_in = useful.janaf_integrate_air(useful.cp_air,mass_conc0,Mm_a,T0,T_ext,dt)/1000 #kJ/kg
-    print("puissance de l \'air entrant",hair_in*massflow_a)
+    hair_ext = useful.janaf_integrate_air(useful.cp_air,mass_conc0,Mm_a,T0,T_ext,dt)/1000 #kJ/kg
+    #print("puissance de l \'air entrant",hair_in*massflow_a)
     hair_out =  useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T0,T_exhaust,dt)/1000 #kJ/kg
-    print("puissance de l \'air sortant",hair_out*massflow_f)
-    print("comparison",Q+hair_out*massflow_f-hair_in*massflow_a,massflow_c*LHV)
+    # print("puissance de l \'air sortant",hair_out*massflow_f)
+    # print("comparison",Q+hair_out*massflow_f-hair_in*massflow_a,massflow_c*LHV)
+    """
+    5) Exergie and losses in the boiler
+    """
+    CH4=useful.CH4
+    ec = HHV- T0*(CH4.S(273.15)/0.016/1000 ) #kJ/kg_c
+
+    s_air_ext = useful.janaf_integrate_air(useful.cp_air_T,mass_conc0,Mm_a,T0,T_ext,dt)
+    hair_ext = useful.janaf_integrate_air(useful.cp_air,mass_conc0,Mm_a,T0,T_ext,dt)/1000
+    e_air_ext = hair_ext-T0*s_air_ext/1000#kJ/kg_air
+
+    s_air_in = useful.janaf_integrate_air(useful.cp_air_T,mass_conc0,Mm_a,T0,T_in,dt)
+    hair_in = useful.janaf_integrate_air(useful.cp_air,mass_conc0,Mm_a,T0,T_in,dt)/1000
+    e_air_in = hair_in-T0*s_air_in/1000#kJ/kg_air
+
+    #boiler in
+    s_f = useful.janaf_integrate_air(useful.cp_air_T,mass_conc,Mm_af,T0,T_out,dt)
+    hf = useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T0,T_out,dt)/1000
+    e_f = hf-T0*s_f/1000#kJ/kg_f
+
+    #boiler out
+    s_f_out = useful.janaf_integrate_air(useful.cp_air_T,mass_conc,Mm_af,T0,T_hot_in,dt)
+    hf_out = useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T0,T_hot_in,dt)/1000
+    e_f_out = hf_out-T0*s_f_out/1000#kJ/kg_f
+
+    #exhaust
+    s_f_exhaust = useful.janaf_integrate_air(useful.cp_air_T,mass_conc,Mm_af,T0,T_exhaust,dt)
+    hf_exhaust = useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T0,T_exhaust,dt)/1000
+    e_f_exhaust = hf_exhaust-T0*s_f_exhaust/1000#kJ/kg_f
+
+    L_comb = massflow_c*ec+massflow_a*e_air_in-massflow_f*e_f #kW
+    L_HR = massflow_a*(e_air_ext-e_air_in)+massflow_f*(e_f_out-e_f_exhaust)
+    L_exhaust = massflow_f*e_f_exhaust
+    print(L_comb,L_HR,L_exhaust)
+    """
+    6) Calculation of exergetic efficiencies
+    """
+    eta_combex = (massflow_f*e_f-massflow_a*e_air_in)/(massflow_c*ec)
+    eta_transex_HR = -(e_air_in-e_air_ext)/(e_f_exhaust-e_f_out)
+
+    #les pertes dans le boiler seront comptés dans ST.py
     """
     Last) Define the outputs :
     """
@@ -164,12 +202,22 @@ def boiler(STboiler_input):
     outputs.T_cold_out = T_in-273.15#°C
     outputs.T_hot_in = T_hot_in-273.15 #°C
 
+    outputs.e_c =ec #kJ/kg_c
     outputs.P_chimney = hair_out*massflow_f#kW
-    print('eta_gen',Q/(LHV*massflow_c+massflow_a*hair_in))
+    outputs.eta_gen = Q/(LHV*massflow_c+massflow_a*hair_ext)
+    outputs.eta_combex = eta_combex
+    outputs.eta_transex_HR =eta_transex_HR
+
+    outputs.L_comb=L_comb
+    outputs.L_HR =L_HR
+    outputs.L_exhaust = L_exhaust
+
+    outputs.e_boiler_in = e_f #kJ/kg_f
+    outputs.e_boiler_out = e_f_out #kJ/kg_f
 
     outputs.boiler_massflow[0:]= [massflow_a,0,massflow_c,massflow_f]
 
-    #pour l instant il manque e_c , eta_combex,
+
     return outputs
 
 results = boiler(STboiler_arg.boiler_input(inversion=True))
