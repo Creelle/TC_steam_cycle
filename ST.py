@@ -295,7 +295,7 @@ def ST(ST_inputs):
     eta_cyclex =0
     eta_totex =0
     eta_gex=0
-    eta_combex = 0
+    eta_combex = boiler_outputs.eta_combex
     eta_chemex = 0
     eta_condex = 0
     eta_transex =0
