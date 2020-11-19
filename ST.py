@@ -223,11 +223,14 @@ def ST(ST_inputs):
     h62= h3-(h3-h6s)*eta_SiT
     x6=x6
     h6 = x6*steamTable.hV_p(p6)+(1-x6)*steamTable.hL_p(p6)
+
     s6 = steamTable.s_ph(p6,h6)
     s62 = x6*steamTable.sV_p(p6)+(1-x6)*steamTable.sL_p(p6)
     T6 = steamTable.t_ph(p6,h6)+273.15#K
     e6 = h6-T0*s6 #kJ/kg#kJ/kg
     results[:,3]=T6-273.65,p6,h6,s6,x6,e6
+
+    
 
     """
     4) Condenser
@@ -309,11 +312,11 @@ def ST(ST_inputs):
 
 
     eta_gex=mv*(e3-e2)/(mc*ec)
-    # eta_gex2= eta_combex*eta_chemex*eta_transex
-    # print(eta_gex,eta_gex2)
+    eta_gex2= eta_combex*eta_chemex*eta_transex
+    print(eta_gex,eta_gex2)
     eta_totex = eta_cyclex*eta_gex*eta_mec
-    #eta_totex2 = Pe/(mc*ec)
-    #print(eta_totex,eta_totex2)
+    eta_totex2 = Pe/(mc*ec)
+    print(eta_totex,eta_totex2)
     print("eta_combex",eta_combex,"eta_chemex",eta_chemex,'eta_transex',eta_transex,"eta_gex",eta_gex,"eta_rotex",eta_rotex,'eta_cyclex',eta_cyclex,"eta_totex",eta_totex,'eta_gen',eta_gen)
     eta_condex = 0
 

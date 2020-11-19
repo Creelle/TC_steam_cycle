@@ -8,6 +8,7 @@
 # However, the arguments for the ST defined in ST_arguments.py CANNOT be modified
 
 import numpy as np;
+from scipy.optimize import fsolve
 import ST_arguments as ST_arg;
 import STboiler_arguments as STboiler_arg;
 from boiler import boiler
@@ -230,7 +231,21 @@ def ST(ST_inputs):
     results[:,3]=T6-273.65,p6,h6,s6,x6,e6
 
     """
-    4) Condenser
+    4) FWH
+    """
+    # trouver h6I
+    h6I = 0.5*(h3-h6)+h6
+
+    #trouver la pression correspondante
+    def function_FWH_pressure(x):
+        h6Is = steamTable.h_ps(x,s3)
+        return (h6I-h6)/(h6Is-h6)-eta_SiT
+    p6I = fsolve(function_FWH_pressure,4)
+    T6I = steamTable.t_ph(p6I,h6I)
+    print(T6I)
+
+    """
+    5) Condenser
     """
     Q2 = h6-h1 # kJ/kg_v
     massflow_condenser_coeff = Q2/(steamTable.CpL_t(T_cond_out-273.15)*(T_cond_out-T_ext))
