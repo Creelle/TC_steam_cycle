@@ -149,10 +149,10 @@ def ST(ST_inputs):
 
     eta_SiC = arg_in.eta_SiC;
     if eta_SiC == -1.:
-        eta_SiC = 0.89
+        eta_SiC = 0.88
     eta_SiT = arg_in.eta_SiT;
     if eta_SiT == -1.:
-        eta_SiT = 0.89
+        eta_SiT = 0.88
 
     # Put all temperatures in Kelvin
     T_max,T_cond_out, T_exhaust, T0, T_ext, T_drum= T_max+273.15,T_cond_out+273.15, T_exhaust+273.15, T0+273.15, T_ext+273.15, Tdrum +273.15 #K
@@ -234,15 +234,53 @@ def ST(ST_inputs):
     4) FWH
     """
     # trouver h6I
-    h6I = 0.5*(h3-h6)+h6
+    #h6I = 0.5*(h3-h6)+h6
+    # #trouver la pression correspondante
+    # def function_FWH_pressure(x):
+    #     h6Is = steamTable.h_ps(x,s3)
+    #     return (h6I-h6)/(h6Is-h6)-eta_SiT
+    # p6I = fsolve(function_FWH_pressure,4)
+    # T6I = steamTable.t_ph(p6I,h6I)
+    # s6I = steamTable.s_ph(p6I,h6I)
+    # x6I = None
+    # e6I = h6I-T0*s6I
+    # print(T6I)
 
-    #trouver la pression correspondante
-    def function_FWH_pressure(x):
-        h6Is = steamTable.h_ps(x,s3)
-        return (h6I-h6)/(h6Is-h6)-eta_SiT
-    p6I = fsolve(function_FWH_pressure,4)
-    T6I = steamTable.t_ph(p6I,h6I)
-    print(T6I)
+    #trouver  l 'etat b
+    # TbI = steamTable.tsat_p(p6I)
+
+    #trouver l 'etat 2'
+    T2_prime = steamTable.tsat_p(p3)
+    h2_prime = steamTable.hL_p(p3)
+    s2_prime =steamTable.sL_p(p3)
+    hb1 = 0.5*(h2_prime-h1)+h1
+
+    def function_FHW_p(x): #x = bar
+        hobbit = steamTable.hL_p(x)
+        return hb1-hobbit
+    pb1 = fsolve(function_FHW_p,4)
+    p61 = pb1
+
+    #trouver les etats b1
+    Tb1 = steamTable.tsat_p(pb1)
+    sb1 = steamTable.s_ph(pb1,hb1)
+    print('sb1',sb1)
+    xb1 = 0
+    eb1 = hb1-T0*sb1
+
+    #trouver h6I et ensuite les etats de b
+    h61s = steamTable.h_ps(p61,s3)
+    h61 = -eta_SiT*(h3-h61s)+h3
+    T61 = steamTable.t_ph(p61,h61)
+    s61 = steamTable.s_ph(p61,h61)
+    x61 = None
+    e61 = h61-T0*s61
+    print('h61',h61,'T61',T61)
+
+
+    X = (hb1-h1)/(h61-hb1)
+    print('X',X)
+
 
     """
     5) Condenser
@@ -266,7 +304,7 @@ def ST(ST_inputs):
     results[:,4]=T1-273.15,p1,h1,s1,x1,e1
 
     """
-    5) Mechanical work:
+    6) Mechanical work:
     """
     Wm_t = h3-h6
     Wm_tmax = e3-e6
@@ -276,13 +314,13 @@ def ST(ST_inputs):
     Wm_max = Wm_tmax-Wm_cmax
 
     """
-    6) massflows
+    7) massflows
     """
     mv = Pe/(Wm*eta_mec) #kg_v/s
     Q_boiler = mv*Q1 #kW
 
     """
-    7) Boiler combustion and heat recovery
+    8) Boiler combustion and heat recovery
     """
     boiler_inputs = STboiler_arg.boiler_input(inversion=inversion, Lambda = comb.Lambda, T_out = comb.Tmax-273.15,
                                             T_exhaust =T_exhaust-273.15,TpinchHR = TpinchHR,T_ext = T_ext-273.15,
@@ -291,14 +329,14 @@ def ST(ST_inputs):
     ma,dummy,mc,mf = boiler_outputs.boiler_massflow[0:]
 
     """
-    8) Energetic efficiencies
+    9) Energetic efficiencies
     """
     eta_cyclen = Wm/Q1
     eta_gen = boiler_outputs.eta_gen
     eta_toten = eta_mec*eta_gen*eta_cyclen
 
     """
-    9) Computation of energy losses :
+    10) Computation of energy losses :
     """
     P_cond = Q2*mv#kW
     Pf_mec = Wm*mv-Pe
@@ -306,10 +344,10 @@ def ST(ST_inputs):
     P_chimney = boiler_outputs.P_chimney
     #P_prim = P_boiler+P_chimney #-P_air_in mais =0 = +/- LHV*mc
     P_prim = boiler_outputs.LHV*mc
-    print("energie chequ up",P_prim,P_chimney+Pf_mec+P_cond+Pe)
-    print("P_chimney",P_chimney,"Q_boiler",Q_boiler,"P_cond",P_cond,"Pf_mec",Pf_mec,"Pe",Pe)
+    # print("energie chequ up",P_prim,P_chimney+Pf_mec+P_cond+Pe)
+    # print("P_chimney",P_chimney,"Q_boiler",Q_boiler,"P_cond",P_cond,"Pf_mec",Pf_mec,"Pe",Pe)
     """
-    10) Exergy efficiencies
+    11) Exergy efficiencies
     """
     ec = boiler_outputs.e_c
     e_boiler_in = boiler_outputs.e_boiler_in
@@ -329,11 +367,11 @@ def ST(ST_inputs):
     eta_totex = eta_cyclex*eta_gex*eta_mec
     #eta_totex2 = Pe/(mc*ec)
     #print(eta_totex,eta_totex2)
-    print("eta_combex",eta_combex,"eta_chemex",eta_chemex,'eta_transex',eta_transex,"eta_gex",eta_gex,"eta_rotex",eta_rotex,'eta_cyclex',eta_cyclex,"eta_totex",eta_totex,'eta_gen',eta_gen)
+    #print("eta_combex",eta_combex,"eta_chemex",eta_chemex,'eta_transex',eta_transex,"eta_gex",eta_gex,"eta_rotex",eta_rotex,'eta_cyclex',eta_cyclex,"eta_totex",eta_totex,'eta_gen',eta_gen)
     eta_condex = 0
 
     """
-    11) Computation of exergy losses
+    12) Computation of exergy losses
     """
     L_comb = boiler_outputs.L_comb #kW
     L_HR = boiler_outputs.L_HR
@@ -376,35 +414,6 @@ def ST(ST_inputs):
     outputs.HR.T_cold_in = boiler_outputs.T_cold_in
     outputs.HR.T_cold_out = boiler_outputs.T_cold_out
     outputs.HR.T_dew = boiler_outputs.T_dew #still gave to define
-
-    """
-    13) Pie charts and cycle graphs
-    """
-    # pie chart of the energie flux in the cycle
-    fig,ax =  plt.subplots(figsize=(6, 3), subplot_kw=dict(aspect="equal"))
-    data = [Pe,Pf_mec,P_cond,P_chimney]
-    labels = ['Useful power {v} [MW]'.format(v=round(Pe/1000)),'Mechanical losses {v} [MW]'.format(v=round(Pf_mec/1000)),'Condensor losses {v} [MW]'.format(v=round(P_cond/1000)),'Chimney losses {v} [MW]'.format(v=round(P_chimney/1000))]
-
-    ax.pie(data,labels = labels,autopct='%1.2f%%',startangle = 90)
-    ax.set_title("Primary energetic flux "+ str(round(P_prim/1000)) + "[MW]")
-
-    # pie chart of the exergie flux in the cycle
-    fig2,ax =  plt.subplots(figsize=(6, 3), subplot_kw=dict(aspect="equal"))
-    data = [Pe,Pf_mec,L_turbine+L_pump,L_cond,L_boiler,L_HR,L_comb,L_exhaust]
-    labels = ['Useful power {v} [MW]'.format(v=round(Pe/1000)),'Mechanical losses {v} [MW]'.format(v=round(Pf_mec/1000)),' \n \n Turbine and \n pump losses {v} [MW]'.format(v=round((L_turbine+L_pump)/1000)),
-              'Condenser losses {v} [MW]'.format(v=round(L_cond/1000)),'Boiler losses {v} [MW]'.format(v=round(L_boiler/1000)),
-              'Heat recovery losses {v} [MW]'.format(v=round(L_HR/1000)),'Combustion losses {v} [MW]'.format(v=round(L_comb/1000)),
-              'Chimney losses {v} [MW]'.format(v=round(L_exhaust/1000))]
-    plt.savefig('figures/energie_pie.png')
-
-    ax.pie(data,labels = labels,autopct="%1.2f%%",startangle = 90)
-    ax.set_title("Primary exergetic flux "+ str(round(ec*mc/1000)) + "[MW]")
-    plt.savefig('figures/exergie_pie.png')
-
-    fig = [fig,fig2]
-    outputs.fig = fig
-    if (ST_inputs.DISPLAY == 1):
-        plt.show()
 
     return outputs;
 
