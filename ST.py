@@ -230,7 +230,7 @@ def ST(ST_inputs):
     e6 = h6-T0*s6 #kJ/kg#kJ/kg
     results[:,3]=T6-273.65,p6,h6,s6,x6,e6
 
-    
+
 
     """
     4) Condenser
@@ -337,7 +337,7 @@ def ST(ST_inputs):
     L_cond=mv*(e6-e1)+mv*massflow_condenser_coeff*(e_cond_water_in-e_cond_water_out)
 
     #Il manque ce qui sort de la tour de refroidissement
-
+    L_transex = 0
     ec = boiler_outputs.e_c
     print('exegie chequ up', ec*mc,Pe+Pf_mec+L_turbine+L_pump+L_boiler+L_cond+L_exhaust+L_HR+L_comb)
 
@@ -347,6 +347,7 @@ def ST(ST_inputs):
     outputs = ST_arg.ST_outputs();
     outputs.eta[0:]= [eta_cyclen,eta_toten,eta_cyclex,eta_totex,eta_gen,eta_gex,eta_combex,eta_chemex,eta_condex,eta_transex]
     outputs.daten[0:]=[P_chimney, Pf_mec, P_cond]
+    outputs.datex[0:]=[Pf_mec,0,0,L_comb,L_cond,L_exhaust,L_transex]
     outputs.dat= results
     outputs.massflow = boiler_outputs.boiler_massflow #[ma,0,mc,mf]
     outputs.massflow[1] = mv
