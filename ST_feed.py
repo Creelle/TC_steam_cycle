@@ -412,10 +412,11 @@ def ST(ST_inputs):
     outputs = ST_arg.ST_outputs();
     outputs.eta[0:]= [eta_cyclen,eta_toten,eta_cyclex,eta_totex,eta_gen,eta_gex,eta_combex,eta_chemex,eta_condex,eta_transex]
     outputs.daten[0:]=[P_chimney, Pf_mec, P_cond]
-    outputs.datex[0:]=[Pf_mec,0,0,L_comb,L_cond,L_exhaust,0]
+    outputs.datex[0:]=[Pf_mec,0,0,L_comb,L_cond,L_exhaust,L_exchanger_soutex]
     outputs.dat= results
     outputs.massflow = boiler_outputs.boiler_massflow #[ma,0,mc,mf]
     outputs.massflow[1] = mv
+    outputs.Xmassflow = np.array([ms])
 
     #combustion
     outputs.combustion.LHV = boiler_outputs.LHV #[kJ/kg_f]
@@ -473,4 +474,4 @@ ST_inputs = ST_arg.ST_inputs();
 ST_inputs.Pe = 35.0e3 #[kW]
 ST_inputs.DISPLAY = 1
 answers = ST(ST_inputs);
-print(answers.dat)
+print(answers.massflow,answers.Xmassflow)
