@@ -5,9 +5,9 @@ TO DO LIST
 OBJECTIVE S10: feedheating de base
 A faire :
  - implementer l exergie pour le cycle de base (ROBBE)
- - Trouver les flux massiques pour un fead heater  (GWENAEL)
- - rajouter les etats nécessaires pour respecter la convention fixé (ROBBE)
- - calculer les pertes au nouveau enchangeur de chaleur(celui du feed heater)
+ - Trouver les flux massiques pour un fead heater  (GWENAEL)== In progress
+ - rajouter les etats nécessaires pour respecter la convention fixé (ROBBE) == a refaire
+ - calculer les pertes au nouveau enchangeur de chaleur(celui du feed heater) == refaire
  -
 
 A faire apres:
@@ -27,3 +27,8 @@ A faire apres :
 - Bleedheating
 - Feedheating
 - Condenser
+
+A faire pour vendredi 27/11:
+
+- faire le reheating (GWENAEL)
+- faire un feedheating (ROBBE)
