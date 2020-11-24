@@ -290,7 +290,7 @@ def ST(ST_inputs):
     results[:,3+nsout+i]=T61-273.35,p61,h61,s61,x61,e61
 
     X= (hb1-h1)/(h61-hb1)
-
+    print(X, 'X',"0.5",(hb1-h1)/(h2_prime-h1))
     """
     4) pump
     """
