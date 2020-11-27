@@ -455,7 +455,7 @@ def ST(ST_inputs):
 
     L_cond=m_prin*(e6-e7)+m_bleed*(e91-e7)+mv*massflow_condenser_coeff*(e_cond_water_in-e_cond_water_out)#vanne included
 
-    L_exchanger_soutex = m_bleed*(e61-e91)+m_prin*(e10-e1)
+    L_exchanger_soutex = m_bleed*(e61-e91)+mv*(e10-e1)
 
     #Il manque ce qui sort de la tour de refroidissement
 
