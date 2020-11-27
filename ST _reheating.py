@@ -220,7 +220,7 @@ def ST(ST_inputs):
     """
     p5 = p4 #p5 est donné dans les arguments
     s5s = s3 #détente isentropique
-    h5s = steamTable.h_ps(p5,s5s)
+    h5s = steamTable.h_ps(p5,s5s) #attention on est ni à saturation, ni sous la courbe! => à checker
     h5 = h3-(h3-h5s)*eta_SiT
     x5 = None
     T5 = steamTable.t_ph(p5,h5)+273.15#K
@@ -368,9 +368,10 @@ def ST(ST_inputs):
 
 
 
-    L_boiler = mv*(e2-e3)+mf*(e_boiler_in-e_boiler_out)
+    L_boiler = mv*(e2-e3+e5-e7)+mf*(e_boiler_in-e_boiler_out)
+    print(L_boiler)
 
-    L_turbine = T0*(s6-s3)*mv
+    L_turbine = T0*(s5-s3+s6-s7)*mv
     L_pump = T0*(s2-s1)*mv#kW
 
     L_cond=mv*(e6-e1)+mv*massflow_condenser_coeff*(e_cond_water_in-e_cond_water_out)
