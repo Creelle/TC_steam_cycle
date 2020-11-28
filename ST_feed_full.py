@@ -351,6 +351,7 @@ def ST(ST_inputs):
     x101 = None
     e101 = h101-T0*s101
     results[:,9]=T101-273.35,p101,h101,s101,x101,e101
+    print(T101,T10,'here')
 
     #bleed proportion
     X= (h1-h10)/(h61-h1+h10-h91)

@@ -284,15 +284,28 @@ def ST(ST_inputs):
     T2_prime = steamTable.tsat_p(p3)+273.15
     h2_prime = steamTable.hL_p(p3)
     s2_prime =steamTable.sL_p(p3)
-
     #premiere estimation de T81
     T81 = 0.5*(T7+T2_prime)#K
-    T101 = 0.5*(T10+T7)
+    T82 = 0.5*(T81+T2_prime)
+    X2=0.1
+    T101 = T10+15
+
+
+    # #premiere estimation de T81
+    T81 = 0.5*(T7+T2_prime)#K
+    T82 = 0.5*(T81+T2_prime)
+    X2=0.1
+
+
 
     def function_FHW_T81(x):
 
-        y=x[1]
-        x=x[0]
+        T101=T10+15#K
+
+        #T102=x[3]
+        X2 = x[1]
+        T81=x[0]
+        T82= x[2]
         """
         This function computes the energy balance at the exchanger condenser and
         the exchanger subcooler for one feed heating
@@ -300,30 +313,48 @@ def ST(ST_inputs):
         y (T101) estimated temperature between the two exchangers for the cold fluid
         """
 
-        h81 = steamTable.hL_t(x-273.15) #kJ/kg_v
-        p81 = steamTable.psat_t(x-273.15) #bar
+        h81 = steamTable.hL_t(T81-273.15) #kJ/kg_v
+        p81 = steamTable.psat_t(T81-273.15) #bar
+
+        h82 = steamTable.hL_t(T82-273.15) #kJ/kg_v
+        p82 = steamTable.psat_t(T82-273.15) #bar
 
         #find state 61
         p61=p81 #isobare
         h61s = steamTable.h_ps(p81,s51)
         h61 = -eta_SiT*(h51-h61s)+h51
 
-        T1 = T81-TpinchEx#K
+        #find state 62
+        p62=p82 #isobare
+        h62s = steamTable.h_ps(p82,s51)
+        h62 = -eta_SiT*(h51-h62s)+h51
+
+        T102 = T81-TpinchEx#K
+        h102=steamTable.h_pt(p10,T102-273.15)
+
+        T1 = T82-TpinchEx#K
         h1=steamTable.h_pt(p10,T1-273.15)
 
-        h101 = steamTable.h_pt(p10,y-273.15)
+        h101 = steamTable.h_pt(p10,T101-273.15)
 
         T91 = T10+TpinchSub #K
         h91 = steamTable.h_pt(p81,T91-273.15)
 
-        #enthalpie ratio
-        X= (h1-h10)/(h61-h1+h10-h91)
-        f1 = X*(h61-h81)-(1+X)*(h1-h101)
-        f2 = X*(h81-h91)-(1+X)*(h101-h10)
+        #enthalpie ratio #premiere estmation
+        X1= ((1+X2)*(h1-h10)+X2*(h91-h62))/(h61-h91+h10-h1)
 
-        return np.array([f1,f2])
 
-    T81,T101 = fsolve(function_FHW_T81,np.array([T81,T101]))
+
+
+        F1 = (1+X1+X2)*(h1-h102)-X2*(h62-h82)
+        F2 = (1+X1+X2)*(h101-h10)-(X1+X2)*(h81-h91)
+        F3 = (1+X1+X2)*(h102-h101)-X1*(h61-h81)-X2*(h82-h81)
+
+        return np.array([F1,F2,F3])
+
+    T81,X2,T82= fsolve(function_FHW_T81,np.array([T81,X2,T82]))
+    T101 = T10+15
+    print(T81,X2,T82)
 
     """
     5) Alimentation pump
