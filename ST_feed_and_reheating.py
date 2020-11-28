@@ -153,7 +153,6 @@ def ST(ST_inputs):
 
     # Put all temperatures in Kelvin
     T_max,T_cond_out, T_exhaust, T0, T_ext, T_drum= T_max+273.15,T_cond_out+273.15, T_exhaust+273.15, T0+273.15, T_ext+273.15, Tdrum +273.15 #K
-    print(nsout)
     if (nsout == 0):
         results = np.zeros((6,4+2*reheat)) # 6 initial states, states 1,2,3,6 if no reheat then 7 = 1 states 4 and 5 is for the reheating
 
@@ -179,6 +178,7 @@ def ST(ST_inputs):
     #                           the useful energy was => useful = cp * (T_3 - T_2).
     #                           are the losses negligible compare to the useful energy?
     #        As a conclusion, what can we do to decrease this loss?
+
     Q1 = 0 #chaleur fournie au boiler
     Q_boiler_exergie = 0 #bilan exergie au boiler
     Wm_t = 0 #kJ/kg_v
@@ -399,14 +399,10 @@ def ST(ST_inputs):
     #bleed proportion
     X= (h1-h10)/(h61-h1+h10-h91)
 
-    print("h51 : ",h51)
-    print("h61 : ",h61)
-    print("h6 :",h6)
-
     Wm_t += (1/(1+X))*(h51-h6) + (X/(1+X))*(h51-h61)
     Wm_tmax += (1/(1+X))*(e51-e6) + (X/(1+X))*(e51-e61)
     L_turbine_mv += (1/(1+X))*T0*(s6-s51) + (X/(1+X))*T0*(s61-s51)
-    print("1 Wm_t, Wm_tmax,L_turbine_mv : ",Wm_t,Wm_tmax,L_turbine_mv)
+
 
 
     """
