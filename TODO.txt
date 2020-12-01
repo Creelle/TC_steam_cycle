@@ -4,22 +4,27 @@ TO DO LIST
 
 OBJECTIVE S10: feedheating de base
 A faire :
- - implementer l exergie pour le cycle de base (ROBBE)
- - Trouver les flux massiques pour un fead heater  (GWENAEL)== Fait
- - rajouter les etats nécessaires pour respecter la convention fixé (ROBBE) == fait
- - calculer les pertes au nouveau enchangeur de chaleur(celui du feed heater) ==fait
- -
+
 
 A faire S12 partie 1 :
-- essayer de mettre plusieurs feed heater (ROBBE)
-  1) vectoriser le code
-  2) faire les bilans pour trouver les nouveaux etats
-- vectoriser le reheat note le dernier on l  appelle LR (last reheat) afin de l utitiliser de le bleed
-- changer la notation que la vectorisation de reheat est fini (GWENAEL)
+- essayer de mettre plusieurs feed heater (ROBBE) ==> 2 fait ==> Vectoriser
+- adapter les travails moteurs , rendements et chaleurs echangées pour plusieurs feed =>(ROBBE)
+
+- vectoriser le reheat note le dernier on l  appelle pre (last reheat) afin de l utitiliser dans le bleed ==> fait
+- changer la notation que la vectorisation de reheat est fini ==> fait
 
 Idees pour apres :
 
 
-- Rajouter drum : choisir ou se trouve les feedheating par rapport au drum (S12)
+- Rajouter drum : choisir ou se trouve les feedheating par rapport au drum (S12) / y reflechir (GWENAEL)
+- Faire des graphes parametriques : avec le reheating, eta_cyclen en fonction du nombre de reheat (GwWENAEL)
+
 - Faire les graphiques pour la ST (S12)
+
+ A  faire apres :
+- le drum 
 - Le rapport + tout mettre en ordre (S13)
+
+A chaque que nous rajoutons un bleed hetaing, nous avons une equation en plus mais 3 etats 6i,8i,10_i+1 mais qui se raporte
+a 2 inconnues (6i et 8i ). Les deux inconues sont T8i ,Xi . Le truc c est on fixe une des deux incunues et l autre pour satisfaire
+l echange de chaleur,en réalité , on peut fixer les parametres de l echange

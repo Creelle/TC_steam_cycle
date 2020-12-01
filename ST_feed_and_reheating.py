@@ -338,7 +338,6 @@ def ST(ST_inputs):
 
     def function_FHW_T81(x):
 
-        T101=T10+15#K
 
         #T102=x[3]
         X2 = x[1]
@@ -373,6 +372,7 @@ def ST(ST_inputs):
         T1 = T82-TpinchEx#K
         h1=steamTable.h_pt(p10,T1-273.15)
 
+        T101=T10+15#K
         h101 = steamTable.h_pt(p10,T101-273.15)
 
         T91 = T10+TpinchSub #K
