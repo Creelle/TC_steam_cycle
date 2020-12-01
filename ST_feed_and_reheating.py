@@ -85,7 +85,7 @@ def ST(ST_inputs):
         nsout = 1;#15°C
     reheat = arg_in.reheat
     if reheat == -1:
-        reheat = 2;# Number of reheating
+        reheat = 0;# Number of reheating
     T_max = arg_in.T_max;
     if T_max == -1.:
         T_max = 520 #°C
@@ -94,7 +94,7 @@ def ST(ST_inputs):
         T_cond_out = 25#°C
     p3_hp = arg_in.p3_hp;
     if p3_hp == -1.:
-        p3_hp =40 #bar
+        p3_hp =50#bar
     eta_mec = arg_in.eta_mec;
     if eta_mec == -1.:
         eta_mec = 0.95 #[-]
@@ -231,18 +231,20 @@ def ST(ST_inputs):
     Here we begin the code vectorization because we want to add the number of reheating that we want
     """
     for i in range (0,reheat):
-            s_pre = results[3][4+2*i]
+
             h_pre = results[2][4+2*i]
+            s_pre = results[3][4+2*i]
             e_pre = results[5][4+2*i]
             p4i = p3 - (p3-p4)*(i+1)/reheat #donné dans les arguments
             s4is = s_pre #détente isentropique
             h4is = steamTable.h_ps(p4i,s4is) #attention on est ni à saturation, ni sous la courbe! => à checker
+            print(s_pre)
             h4i = h_pre-(h_pre-h4is)*eta_SiT
             x4i = None #check que ça doit pas passer sous la courbe?
             T4i = steamTable.t_ph(p4i,h4i)+273.15#K
             s4i = steamTable.s_ph(p4i,h4i)
             e4i = h4i-T0*s4i #kJ/kg#kJ/kg
-            results[:,4+2*i+1]=T4i-273.15,p4i,x4i,h4i,s4i,e4i
+            results[:,4+2*i+1]=T4i-273.15,p4i,h4i,s4i,x4i,e4i
 
             Wm_t += h_pre-h4i
             Wm_tmax += e_pre-e4i
@@ -254,7 +256,7 @@ def ST(ST_inputs):
             s5i = steamTable.s_pt(p5i,T5i-273.15)
             x5i = None
             e5i = h5i-T0*s5i
-            results[:,4+2*i+2]=T5i-273.15,p5i,x5i,h5i,s5i,e5i
+            results[:,4+2*i+2]=T5i-273.15,p5i,h5i,s5i,x5i,e5i
 
             Q1 += (h5i-h4i)
             Q_boiler_exergie += e5i-e4i
@@ -293,13 +295,16 @@ def ST(ST_inputs):
     # print(" reheat Q1,Q_boiler_exergie,Wm_t,Wm_tmax,L_turbine_mv : ",Q1,Q_boiler_exergie,Wm_t,Wm_tmax,L_turbine_mv)
 
     """
-    4) Turbine
+    4) Turbine : after the reheat
     """
     s_pre = results[3][4+2*reheat]
     h_pre = results[2][4+2*reheat]
+    e_pre = results[5][4+2*reheat]
 
     p6=p7
     h6s = steamTable.h_ps(p7,s_pre)
+    print('spre',s_pre)
+
     h62= h_pre-(h_pre-h6s)*eta_SiT
     x6=x6
     h6 = x6*steamTable.hV_p(p6)+(1-x6)*steamTable.hL_p(p6)
@@ -354,13 +359,13 @@ def ST(ST_inputs):
 
         #find state 61
         p61=p81 #isobare
-        h61s = steamTable.h_ps(p81,s51)
-        h61 = -eta_SiT*(h51-h61s)+h51
+        h61s = steamTable.h_ps(p81,s_pre)
+        h61 = -eta_SiT*(h_pre-h61s)+h_pre
 
         #find state 62
         p62=p82 #isobare
-        h62s = steamTable.h_ps(p82,s51)
-        h62 = -eta_SiT*(h51-h62s)+h51
+        h62s = steamTable.h_ps(p82,s_pre)
+        h62 = -eta_SiT*(h_pre-h62s)+h_pre
 
         T102 = T81-TpinchEx#K
         h102=steamTable.h_pt(p10,T102-273.15)
@@ -384,6 +389,7 @@ def ST(ST_inputs):
         F3 = (1+X1+X2)*(h102-h101)-X1*(h61-h81)-X2*(h82-h81)
 
         return np.array([F1,F2,F3])
+
 
     T81,X2,T82= fsolve(function_FHW_T81,np.array([T81,X2,T82]))
     T101 = T10+15
@@ -431,8 +437,8 @@ def ST(ST_inputs):
 
     #state 6I
     p61=p81 #isobare
-    h61s = steamTable.h_ps(p61,s51)
-    h61 = -eta_SiT*(h51-h61s)+h51
+    h61s = steamTable.h_ps(p61,s_pre)
+    h61 = -eta_SiT*(h_pre-h61s)+h_pre
     T61 = steamTable.t_ph(p61,h61)+273.15
     s61 = steamTable.s_ph(p61,h61)
     x61 = None
@@ -463,9 +469,9 @@ def ST(ST_inputs):
     #bleed proportion
     X= (h1-h10)/(h61-h1+h10-h91)
 
-    Wm_t += (1/(1+X))*(h51-h6) + (X/(1+X))*(h51-h61)
-    Wm_tmax += (1/(1+X))*(e51-e6) + (X/(1+X))*(e51-e61)
-    L_turbine_mv += (1/(1+X))*T0*(s6-s51) + (X/(1+X))*T0*(s61-s51)
+    Wm_t += (1/(1+X))*(h_pre-h6) + (X/(1+X))*(h_pre-h61)
+    Wm_tmax += (1/(1+X))*(e_pre-e6) + (X/(1+X))*(e_pre-e61)
+    L_turbine_mv += (1/(1+X))*T0*(s6-s_pre) + (X/(1+X))*T0*(s61-s_pre)
 
 
 

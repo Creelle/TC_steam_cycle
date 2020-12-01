@@ -227,6 +227,7 @@ def ST(ST_inputs):
 
     p6=p7
     h6s = steamTable.h_ps(p7,s3)
+    print('s3',s3)
     h62= h3-(h3-h6s)*eta_SiT
     x6=x6
     h6 = x6*steamTable.hV_p(p6)+(1-x6)*steamTable.hL_p(p6)
