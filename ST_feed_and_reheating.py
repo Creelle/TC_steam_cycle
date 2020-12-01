@@ -85,7 +85,7 @@ def ST(ST_inputs):
         nsout = 1;#15°C
     reheat = arg_in.reheat
     if reheat == -1:
-        reheat = 0;# Number of reheating
+        reheat = 2;# Number of reheating
     T_max = arg_in.T_max;
     if T_max == -1.:
         T_max = 520 #°C
@@ -227,47 +227,80 @@ def ST(ST_inputs):
     e3 = h3-T0*s3#kJ/kg
     results[:,4]=T3-273.35,p3,h3,s3,x3,e3
 
+    """
+    Here we begin the code vectorization because we want to add the number of reheating that we want
+    """
+    for i in range (0,reheat):
+            s_pre = results[3][4+2*i]
+            h_pre = results[2][4+2*i]
+            e_pre = results[5][4+2*i]
+            p4i = p3 - (p3-p4)*(i+1)/reheat #donné dans les arguments
+            s4is = s_pre #détente isentropique
+            h4is = steamTable.h_ps(p4i,s4is) #attention on est ni à saturation, ni sous la courbe! => à checker
+            h4i = h_pre-(h_pre-h4is)*eta_SiT
+            x4i = None #check que ça doit pas passer sous la courbe?
+            T4i = steamTable.t_ph(p4i,h4i)+273.15#K
+            s4i = steamTable.s_ph(p4i,h4i)
+            e4i = h4i-T0*s4i #kJ/kg#kJ/kg
+            results[:,4+2*i+1]=T4i-273.15,p4i,x4i,h4i,s4i,e4i
+
+            Wm_t += h_pre-h4i
+            Wm_tmax += e_pre-e4i
+            L_turbine_mv += T0*(s4i-s_pre)
+
+            p5i = p4i # on considère que la combustion se fait sans perte de charge
+            T5i = T3
+            h5i = steamTable.h_pt(p5i,T5i-273.15)
+            s5i = steamTable.s_pt(p5i,T5i-273.15)
+            x5i = None
+            e5i = h5i-T0*s5i
+            results[:,4+2*i+2]=T5i-273.15,p5i,x5i,h5i,s5i,e5i
+
+            Q1 += (h5i-h4i)
+            Q_boiler_exergie += e5i-e4i
 
     """
     ) High Pressure Turbine
     """
-    p41 = p4 #donné dans les arguments
-    s41s = s3 #détente isentropique
-    h41s = steamTable.h_ps(p41,s41s) #attention on est ni à saturation, ni sous la courbe! => à checker
-    h41 = h3-(h3-h41s)*eta_SiT
-    x41 = None
-    T41 = steamTable.t_ph(p41,h41)+273.15#K
-    s41 = steamTable.s_ph(p41,h41)
-    e41 = h41-T0*s41 #kJ/kg#kJ/kg
-    results[:,5]=T41-273.15,p41,x41,h41,s41,e41
-
-    Wm_t += h3-h41
-    Wm_tmax += e3-e41
-    L_turbine_mv += T0*(s41-s3)
+    # p41 = p4 #donné dans les arguments
+    # s41s = s3 #détente isentropique
+    # h41s = steamTable.h_ps(p41,s41s) #attention on est ni à saturation, ni sous la courbe! => à checker
+    # h41 = h3-(h3-h41s)*eta_SiT
+    # x41 = None
+    # T41 = steamTable.t_ph(p41,h41)+273.15#K
+    # s41 = steamTable.s_ph(p41,h41)
+    # e41 = h41-T0*s41 #kJ/kg#kJ/kg
+    # results[:,5]=T41-273.15,p41,x41,h41,s41,e41
+    #
+    # Wm_t += h3-h41
+    # Wm_tmax += e3-e41
+    # L_turbine_mv += T0*(s41-s3)
 
     """
     ) After first reheating
     """
-    p51 = p4 # on considère que la combustion se fait sans perte de charge
-    T51 = T3
-    h51 = steamTable.h_pt(p51,T51-273.15)
-    s51 = steamTable.s_pt(p51,T51-273.15)
-    x51 = None
-    e51 = h51-T0*s51
-    results[:,6]=T51-273.15,p51,x51,h51,s51,e51
-
-    Q1 += (h51-h41)
-    Q_boiler_exergie += e51-e41
-
-    print(" reheat Q1,Q_boiler_exergie,Wm_t,Wm_tmax,L_turbine_mv : ",Q1,Q_boiler_exergie,Wm_t,Wm_tmax,L_turbine_mv)
+    # p51 = p4 # on considère que la combustion se fait sans perte de charge
+    # T51 = T3
+    # h51 = steamTable.h_pt(p51,T51-273.15)
+    # s51 = steamTable.s_pt(p51,T51-273.15)
+    # x51 = None
+    # e51 = h51-T0*s51
+    # results[:,6]=T51-273.15,p51,x51,h51,s51,e51
+    #
+    # Q1 += (h51-h41)
+    # Q_boiler_exergie += e51-e41
+    #
+    # print(" reheat Q1,Q_boiler_exergie,Wm_t,Wm_tmax,L_turbine_mv : ",Q1,Q_boiler_exergie,Wm_t,Wm_tmax,L_turbine_mv)
 
     """
     4) Turbine
     """
+    s_pre = results[3][4+2*reheat]
+    h_pre = results[2][4+2*reheat]
 
     p6=p7
-    h6s = steamTable.h_ps(p7,s51)
-    h62= h51-(h51-h6s)*eta_SiT
+    h6s = steamTable.h_ps(p7,s_pre)
+    h62= h_pre-(h_pre-h6s)*eta_SiT
     x6=x6
     h6 = x6*steamTable.hV_p(p6)+(1-x6)*steamTable.hL_p(p6)
     s6 = steamTable.s_ph(p6,h6)
