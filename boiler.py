@@ -179,7 +179,7 @@ def boiler(STboiler_input):
     L_comb = massflow_c*ec+massflow_a*e_air_in-massflow_f*e_f #kW
     L_HR = massflow_a*(e_air_ext-e_air_in)+massflow_f*(e_f_out-e_f_exhaust)
     L_exhaust = massflow_f*e_f_exhaust
-    print(L_comb,L_HR,L_exhaust)
+    
     """
     6) Calculation of exergetic efficiencies
     """
@@ -223,4 +223,3 @@ def boiler(STboiler_input):
     return outputs
 
 results = boiler(STboiler_arg.boiler_input(inversion=True))
-#print(results.boiler_massflow)

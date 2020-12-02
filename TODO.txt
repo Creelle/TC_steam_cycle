@@ -8,6 +8,7 @@ A faire :
 
 A faire S12 partie 1 :
 - essayer de mettre plusieurs feed heater (ROBBE) ==> 2 fait ==> Vectoriser
+Vectorisation faite mais mettre en place une methode pour les conditions initiales
 - adapter les travails moteurs , rendements et chaleurs echangées pour plusieurs feed =>(ROBBE)
 
 - vectoriser le reheat note le dernier on l  appelle pre (last reheat) afin de l utitiliser dans le bleed ==> fait
@@ -21,8 +22,13 @@ Idees pour apres :
 
 - Faire les graphiques pour la ST (S12)
 
+Autre chose a faire :
+- bulb temperature chimney
+- L_cond
+- cycle graph
+
  A  faire apres :
-- le drum 
+- le drum
 - Le rapport + tout mettre en ordre (S13)
 
 A chaque que nous rajoutons un bleed hetaing, nous avons une equation en plus mais 3 etats 6i,8i,10_i+1 mais qui se raporte

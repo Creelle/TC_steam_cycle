@@ -76,7 +76,6 @@ def ST(ST_inputs):
 
     ## Check input arguments
     # ======================
-
     # if value == -1 <=> value not defined. Thus, it will be defined here:
     Pe = arg_in.Pe;
     if Pe ==-1.:
@@ -86,7 +85,7 @@ def ST(ST_inputs):
         nsout = 2;#15°C
     reheat = arg_in.reheat
     if reheat == -1:
-        reheat = 2;# Number of reheating
+        reheat = 1;# Number of reheating
     T_max = arg_in.T_max;
     if T_max == -1.:
         T_max = 520 #°C
@@ -205,9 +204,6 @@ def ST(ST_inputs):
     """
 
     p10=p3_hp/4#bar choix
-    #s2=s1
-    # h2s=steamTable.h_ps(p2,s1)
-    # h2 = (h2s-h1)/eta_SiC+h1
     h10=v7*(p10-p7)*10**2/eta_SiC+h7#kJ/kg
     T10= steamTable.t_ph(p10,h10)+273.15#K
     s10 = steamTable.s_ph(p10,h10)
@@ -218,7 +214,6 @@ def ST(ST_inputs):
     """
     3) Boiler
     """
-    # s'occuper ici de la combustion
 
     T3=T_max #K
     p3= p3_hp #bar
@@ -227,6 +222,10 @@ def ST(ST_inputs):
     x3 = None # vapeur surchauffée
     e3 = h3-T0*s3#kJ/kg
     results[:,4]=T3-273.35,p3,h3,s3,x3,e3
+
+    """
+    4) Reheating
+    """
 
     """
     Here we begin the code vectorization because we want to add the number of reheating that we want
@@ -263,40 +262,7 @@ def ST(ST_inputs):
             Q_boiler_exergie += e5i-e4i
 
     """
-    ) High Pressure Turbine
-    """
-    # p41 = p4 #donné dans les arguments
-    # s41s = s3 #détente isentropique
-    # h41s = steamTable.h_ps(p41,s41s) #attention on est ni à saturation, ni sous la courbe! => à checker
-    # h41 = h3-(h3-h41s)*eta_SiT
-    # x41 = None
-    # T41 = steamTable.t_ph(p41,h41)+273.15#K
-    # s41 = steamTable.s_ph(p41,h41)
-    # e41 = h41-T0*s41 #kJ/kg#kJ/kg
-    # results[:,5]=T41-273.15,p41,x41,h41,s41,e41
-    #
-    # Wm_t += h3-h41
-    # Wm_tmax += e3-e41
-    # L_turbine_mv += T0*(s41-s3)
-
-    """
-    ) After first reheating
-    """
-    # p51 = p4 # on considère que la combustion se fait sans perte de charge
-    # T51 = T3
-    # h51 = steamTable.h_pt(p51,T51-273.15)
-    # s51 = steamTable.s_pt(p51,T51-273.15)
-    # x51 = None
-    # e51 = h51-T0*s51
-    # results[:,6]=T51-273.15,p51,x51,h51,s51,e51
-    #
-    # Q1 += (h51-h41)
-    # Q_boiler_exergie += e51-e41
-    #
-    # print(" reheat Q1,Q_boiler_exergie,Wm_t,Wm_tmax,L_turbine_mv : ",Q1,Q_boiler_exergie,Wm_t,Wm_tmax,L_turbine_mv)
-
-    """
-    4) Turbine : after the reheat
+    5) Turbine : after the reheat
     """
     s_pre = results[3][4+2*reheat]
     h_pre = results[2][4+2*reheat]
@@ -304,7 +270,6 @@ def ST(ST_inputs):
 
     p6=p7
     h6s = steamTable.h_ps(p7,s_pre)
-    print('spre',s_pre)
 
     h62= h_pre-(h_pre-h6s)*eta_SiT
     x6=x6
@@ -317,34 +282,49 @@ def ST(ST_inputs):
 
 
     """
-    4) FWH
+    6) FWH
     """
     #trouver l 'etat 2'
     T2_prime = steamTable.tsat_p(p3)+273.15
     h2_prime = steamTable.hL_p(p3)
     s2_prime =steamTable.sL_p(p3)
+
+
     #premiere estimation de T81
-    # T81 = 0.5*(T7+T2_prime)#K
-    # T82 = 0.5*(T81+T2_prime)
-    # X2=0.1
-    T101 = T10+15
-
-
     deltaT = (T2_prime-T7)/(nsout+1)
-    X2=0.1
     T8i = np.arange(T7+deltaT,T2_prime,deltaT)
-    T81 = T8i[0]
-    T82 = T8i[1]
+    # T81 = T8i[0]
+    # T82 = T8i[1]
+
+    X_bleedings = 0.1*np.ones(nsout)
+    if nsout != 1:
+        initial = np.append(T8i,X_bleedings[1:])
+    else :
+        initial = T8i
+    #feexing the inlet temperature
+    #T101 = T10+15
+    #T102 = T02+10
 
 
+    def function_FHW_T81(x):# x = [T81,T82,...,T8n, X2,X3,X4,...,Xn]
 
-    def function_FHW_T81(x):
+        if nsout ==1:
+            T8i = np.array([x[0]])
+            T101 = x[1]
 
 
-        #T102=x[3]
-        X2 = x[2]
-        T81=x[0]
-        T82= x[1]
+        else:
+
+            T8i = x[0:nsout]
+
+            Xis = x[nsout:]
+
+            X2= Xis[0]
+
+        # T81=x[0]
+        # T82= x[1]
+        # X2 = x[2]
+
         """
         This function computes the energy balance at the exchanger condenser and
         the exchanger subcooler for one feed heating
@@ -352,53 +332,117 @@ def ST(ST_inputs):
         y (T101) estimated temperature between the two exchangers for the cold fluid
         """
 
-        h81 = steamTable.hL_t(T81-273.15) #kJ/kg_v
-        p81 = steamTable.psat_t(T81-273.15) #bar
-
-        h82 = steamTable.hL_t(T82-273.15) #kJ/kg_v
-        p82 = steamTable.psat_t(T82-273.15) #bar
+        # h81 = steamTable.hL_t(T81-273.15) #kJ/kg_v
+        # p81 = steamTable.psat_t(T81-273.15) #bar
+        # h82 = steamTable.hL_t(T82-273.15) #kJ/kg_v
+        # p82 = steamTable.psat_t(T82-273.15) #bar
+        h8i=np.zeros(len(T8i))
+        p8i=np.zeros(len(T8i))
 
         #find state 61
-        p61=p81 #isobare
-        h61s = steamTable.h_ps(p81,s_pre)
-        h61 = -eta_SiT*(h_pre-h61s)+h_pre
 
-        #find state 62
-        p62=p82 #isobare
-        h62s = steamTable.h_ps(p82,s_pre)
-        h62 = -eta_SiT*(h_pre-h62s)+h_pre
+        for i in range(len(T8i)):
+            h8i[i] =  steamTable.hL_t(T8i[i]-273.15)
+            p8i[i] = steamTable.psat_t(T8i[i]-273.15)
 
-        T102 = T81-TpinchEx#K
-        h102=steamTable.h_pt(p10,T102-273.15)
+        p6i = p8i
+        h6si = np.zeros(len(T8i))
+        #find state 61
+        for j in range(len(T8i)):
+            h6si[j]= steamTable.h_ps(p8i[j],s_pre)
 
-        T1 = T82-TpinchEx#K
-        h1=steamTable.h_pt(p10,T1-273.15)
+        # p61=p81 #isobare
+        # h61s = steamTable.h_ps(p81,s_pre)
+        # h61 = -eta_SiT*(h_pre-h61s)+h_pre
+        #
+        #
+        # #find state 62
+        # p62=p82 #isobare
+        # h62s = steamTable.h_ps(p82,s_pre)
+        # h62 = -eta_SiT*(h_pre-h62s)+h_pre
+
+        h6i = -eta_SiT*(h_pre-h6si)+h_pre
+
+        # T102 = T81-TpinchEx#K
+        # h102=steamTable.h_pt(p10,T102-273.15)
+        #
+        # T1 = T82-TpinchEx#K
+        # h1=steamTable.h_pt(p10,T1-273.15)
+        # print(T1,'first')
 
         T101=T10+15#K
         h101 = steamTable.h_pt(p10,T101-273.15)
 
-        T91 = T10+TpinchSub #K
-        h91 = steamTable.h_pt(p81,T91-273.15)
+        T10i = T8i-TpinchEx
+        h10i = np.zeros(len(T8i))
+
+        for k in range(len(T8i)):
+            h10i[k] = steamTable.h_pt(p10,T10i[k]-273.15)
+
+        T1,h1 = T10i[-1],h10i[-1]
+
+        T10i,h10i = np.append(T101,T10i),np.append(h101,h10i) # (h101,h102,...h10n,h1) longueur n+1
+
+        p81 = p8i[0]
+        T9 = T10+TpinchSub #K
+        h9 = steamTable.h_pt(p81,T9-273.15)
 
         #enthalpie ratio #premiere estmation
-        X1= ((1+X2)*(h1-h10)+X2*(h91-h62))/(h61-h91+h10-h1)
+        #X1= ((1+X2)*(h1-h10)+X2*(h9-h62))/(h61-h9+h10-h1)
+        #X1 = (X2*(-h62+h1-h101+h81)+h1-h101)/(h61-h1+h101-h81)
 
+        if nsout ==1:
+            X1= (h1-h10)/(h6i[0]-h1+h10-h9)
+        elif nsout ==2:
+            X1 = (X2*(-h6i[1]+h8i[0])+(1+X2)*(h1-h10i[0]))/(h6i[0]-h1+h10i[0]-h8i[0])
 
+        else :
+            sumXi_3_n = sum(Xis[1:])
+            sumXi_2_n = sum(Xis[0:])
+            X1= X2*((-h6i[1]+h8i[0])+(1+sumXi_2_n)*(h10i[2]-h10i[0])-sumXi_3_n*(h8i[2]-h8i[0]))/(h6i[0]-h10i[2]+h10i[0]-h8i[0])
 
+        #"First"
+        #h10 = h101,h102,...hh10n,h1
+        if nsout == 1:
+            Fone = X1*(h8i[0]-h9)-(1+X1)*(h101-h10)
+            Flast = X1*(h6i[-1]-h8i[-1])-(1+X1)*(h10i[-1]-h10i[-2])
+            Functions = np.array([Fone,Flast])
+        else:
 
-        F1 = (1+X1+X2)*(h1-h102)-X2*(h62-h82)
-        F2 = (1+X1+X2)*(h101-h10)-(X1+X2)*(h81-h91)
-        F3 = (1+X1+X2)*(h102-h101)-X1*(h61-h81)-X2*(h82-h81)
+            Xis = np.append(X1,Xis)
+            sumXi = sum(Xis)
+            Fone = sumXi*(h8i[0]-h9)-(1+sumXi)*(h101-h10)
+            Fa = np.zeros(nsout-1)
+            for i in range(len(Fa)):
+                a = i+1
+                sumXi_aplus_n = sum(Xis[a:])
+                Fa[i] = sumXi_aplus_n*(h8i[a]-h8i[a-1])+Xis[a-1]*(h6i[a-1]-h8i[a-1])-(1+sumXi)*(h10i[a]-h10i[a-1])# c est chaud pour les notations
+            Flast = Xis[-1]*(h6i[-1]-h8i[-1])-(1+sumXi)*(h10i[-1]-h10i[-2])
+            #print(F1,Fa,Flast)
+            #
+            # F1 = (1+X1+X2)*(h1-h102)-X2*(h62-h82)
+            # F2 = (1+X1+X2)*(h101-h10)-(X1+X2)*(h81-h9)
+            # F3 = (1+X1+X2)*(h102-h101)-X1*(h61-h81)-X2*(h82-h81)
+            #print(F2,F3,F1)
+            Functions = np.append(Fone,Fa)
+            Functions = np.append(Functions,Flast)
 
-        return np.array([F1,F2,F3])
+            #print(F2,Fone)
 
+        return Functions
 
-    T81,X2,T82= fsolve(function_FHW_T81,np.array([T81,T82,X2]))
+    #print(function_FHW_T81(np.array([0.5*(T2_prime+T7)])))
+    print(initial,'initial')
+
+    initial = np.array([399.6405587459073,426.4747133547441,0.06037085620235728])
+    T81,T82,X2= fsolve(function_FHW_T81,initial)
     T101 = T10+15
     print(T81,T82,X2)
+    # T81,T101 = fsolve(function_FHW_T81,np.array([0.5*(T2_prime+T7),0.5*(T10+T7)]))
+    # print('T81',T81,T101)
 
     """
-    5) Alimentation pump
+    7) Alimentation pump
     """
     T1= T81-TpinchEx#K
     p1 = p10
@@ -411,9 +455,6 @@ def ST(ST_inputs):
 
 
     p2=p3_hp#bar
-    #s2=s1
-    # h2s=steamTable.h_ps(p2,s1)
-    # h2 = (h2s-h1)/eta_SiC+h1
     h2=v1*(p2-p1)*10**2/eta_SiC+h1#kJ/kg
     T2= steamTable.t_ph(p2,h2)+273.15#K
     s2 = steamTable.s_ph(p2,h2)
@@ -425,7 +466,7 @@ def ST(ST_inputs):
     Q_boiler_exergie = e3-e2
 
     """
-    6) FWH states
+    8) FWH states
     """
 
     # state 81
@@ -476,9 +517,8 @@ def ST(ST_inputs):
     L_turbine_mv += (1/(1+X))*T0*(s6-s_pre) + (X/(1+X))*T0*(s61-s_pre)
 
 
-
     """
-    5) Condenser
+    9) Condenser
     """
     Q2 = 1/(1+X)*(h6-h7) + X/(1+X)*(h91-h7)
      # kJ/kg_v
@@ -492,7 +532,7 @@ def ST(ST_inputs):
     e_cond_water_out = h_cond_water_out-T0*s_cond_water_out
 
     """
-    6) Mechanical work:
+    10) Mechanical work:
     """
     #Wm_t = 1/(1+X)*(h3-h6) + X/(1+X)*(h3-h61) #kJ/kg_v
     #Wm_tmax = 1/(1+X)*e3-e6 + X/(1+X)*(e3-e61) #kJ/kg_v
@@ -502,13 +542,13 @@ def ST(ST_inputs):
     Wm_max = Wm_tmax-Wm_cmax
 
     """
-    7) massflows
+    11) massflows
     """
     mv = Pe/(Wm*eta_mec) #kg_v/s
     Q_boiler = mv*Q1 #kW
 
     """
-    8) Boiler combustion and heat recovery
+    12) Boiler combustion and heat recovery
     """
     boiler_inputs = STboiler_arg.boiler_input(inversion=inversion, Lambda = comb.Lambda, T_out = comb.Tmax-273.15,
                                             T_exhaust =T_exhaust-273.15,TpinchHR = TpinchHR,T_ext = T_ext-273.15,
@@ -517,14 +557,14 @@ def ST(ST_inputs):
     ma,dummy,mc,mf = boiler_outputs.boiler_massflow[0:]
 
     """
-    9) Energetic efficiencies
+    13) Energetic efficiencies
     """
     eta_cyclen = Wm/Q1
     eta_gen = boiler_outputs.eta_gen
     eta_toten = eta_mec*eta_gen*eta_cyclen
 
     """
-    10) Computation of energy losses :
+    14) Computation of energy losses :
     """
     P_cond = Q2*mv#kW
     Pf_mec = Wm*mv-Pe
@@ -535,7 +575,7 @@ def ST(ST_inputs):
     print("energie chequ up",P_prim,P_chimney+Pf_mec+P_cond+Pe)
     # print("P_chimney",P_chimney,"Q_boiler",Q_boiler,"P_cond",P_cond,"Pf_mec",Pf_mec,"Pe",Pe)
     """
-    11) Exergy efficiencies
+    15) Exergy efficiencies
     """
     ec = boiler_outputs.e_c
     e_boiler_in = boiler_outputs.e_boiler_in
@@ -548,7 +588,6 @@ def ST(ST_inputs):
     eta_chemex = boiler_outputs.eta_chemex
     eta_transex =mv*Q_boiler_exergie/(mf*(e_boiler_in-e_boiler_out)) # echange au boiler
 
-
     eta_gex=mv*Q_boiler_exergie/(mc*ec)
     # eta_gex2= eta_combex*eta_chemex*eta_transex
     # print(eta_gex,eta_gex2)
@@ -559,14 +598,13 @@ def ST(ST_inputs):
     eta_condex = 0
 
     """
-    12) Computation of exergy losses
+    16) Computation of exergy losses
     """
     L_comb = boiler_outputs.L_comb #kW
     L_HR = boiler_outputs.L_HR
     L_exhaust = boiler_outputs.L_exhaust
 
     L_boiler = mv*(-Q_boiler_exergie)+mf*(e_boiler_in-e_boiler_out) #à checekr
-    print("L_boiler :",L_boiler)
 
     m_prin = 1/(1+X)*mv
     m_bleed = X/(1+X)*mv
@@ -610,7 +648,7 @@ def ST(ST_inputs):
     outputs.HR.T_dew = boiler_outputs.T_dew #still gave to define
 
     """
-    13) Pie charts and cycle graphs
+    18) Pie charts and cycle graphs
     """
     # pie chart of the energie flux in the cycle
     fig,ax =  plt.subplots(figsize=(6, 3), subplot_kw=dict(aspect="equal"))
@@ -640,15 +678,8 @@ def ST(ST_inputs):
 
     return outputs;
 
-# Example:
-# steamTable = XSteam(XSteam.UNIT_SYSTEM_MKS); # m/kg/sec/°C/bar/W
-# print (steamTable.h_pt(50,300));
-# print (steamTable.s_pt(50,300));
-# print (steamTable.h_ps(0.05,steamTable.s_pt(50,300)));
-
 
 ST_inputs = ST_arg.ST_inputs();
 ST_inputs.Pe = 35.0e3 #[kW]
 ST_inputs.DISPLAY = 1
 answers = ST(ST_inputs);
-print(answers.massflow,answers.Xmassflow)
