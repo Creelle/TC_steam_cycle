@@ -6,7 +6,19 @@ from thermochem import janaf
 db = janaf.Janafdb();
 
 #ici contre courant
-
+def psychrometrics(Tdb,absolute_humidity):
+    """
+        psychrometrics gives the dew points temperature [°C] for given inputs:
+         - dry bulb temperature (Tdb [°C])
+         - absolute humidity ( absolute_humidity [kg_water/kg_dry_air]).
+        Equations and data based on ASHRAE 2013 fundamentals.
+        Example: psychrometrics(30,0.01) gives 14.07°C
+    """
+    P_atm = 101.325;#kPa
+    Pw=absolute_humidity*P_atm/(0.621945+absolute_humidity); #partial pressure of water wapor
+    alpha=np.log(Pw);
+    Tdp=6.54 + 14.526*alpha+0.7389*(alpha**2)+0.09486*(alpha**3)+0.4569*(Pw**0.1984); # valid for Tdp between 0 C and 93 C
+    return Tdp;
 
 """
 Le but ici sera de calculer ce qui se passe dans le boiler,
@@ -121,7 +133,7 @@ def boiler(STboiler_input):
         massflow_f = Q*1000/useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T_in+TpinchHR,T_out,dt) #kg_f/kg_vapor
         massflow_a = massflow_f/(1+1/(Lambda*ma1))
         massflow_c = massflow_f-massflow_a #kg/s
-        print('massflow_c',massflow_c)
+        #print('massflow_c',massflow_c)
 
         """
         3) From the massflow, calculate a new T_in
@@ -179,7 +191,7 @@ def boiler(STboiler_input):
     L_comb = massflow_c*ec+massflow_a*e_air_in-massflow_f*e_f #kW
     L_HR = massflow_a*(e_air_ext-e_air_in)+massflow_f*(e_f_out-e_f_exhaust)
     L_exhaust = massflow_f*e_f_exhaust
-    
+
     """
     6) Calculation of exergetic efficiencies
     """

@@ -17,19 +17,7 @@ from pyXSteam.XSteam import XSteam # see documentation here: https://pypi.org/pr
 
 # Add your packages here:
 
-def psychrometrics(Tdb,absolute_humidity):
-    """
-        psychrometrics gives the dew points temperature [°C] for given inputs:
-         - dry bulb temperature (Tdb [°C])
-         - absolute humidity ( absolute_humidity [kg_water/kg_dry_air]).
-        Equations and data based on ASHRAE 2013 fundamentals.
-        Example: psychrometrics(30,0.01) gives 14.07°C
-    """
-    P_atm = 101.325;#kPa
-    Pw=absolute_humidity*P_atm/(0.621945+absolute_humidity); #partial pressure of water wapor
-    alpha=np.log(Pw);
-    Tdp=6.54 + 14.526*alpha+0.7389*(alpha**2)+0.09486*(alpha**3)+0.4569*(Pw**0.1984); # valid for Tdp between 0 C and 93 C
-    return Tdp;
+
 
 def ST(ST_inputs):
     """

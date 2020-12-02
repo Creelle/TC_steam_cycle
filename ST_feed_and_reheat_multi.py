@@ -153,13 +153,8 @@ def ST(ST_inputs):
 
     # Put all temperatures in Kelvin
     T_max,T_cond_out, T_exhaust, T0, T_ext, T_drum= T_max+273.15,T_cond_out+273.15, T_exhaust+273.15, T0+273.15, T_ext+273.15, Tdrum +273.15 #K
-    if (nsout == 0):
-        results = np.zeros((6,4+2*reheat)) # 6 initial states, states 1,2,3,6 if no reheat then 7 = 1 states 4 and 5 is for the reheating
 
-    elif(nsout == 1):
-        results = np.zeros((6,10+2*reheat)) #7,10,1,2,3,[reheat],6,61,81,91,101 # est ce qu on met 101 quelque part?
-    else:
-        results = np.zeros((6,10+2*(nsout-1)+2*reheat))
+    results = np.zeros((6,10+2*(nsout-1)+2*reheat))#7,10,1,2,3,[reheat],6,61,81,91,101 # est ce qu on met 101 quelque part?
     ## cycle definition
     # =================
     # Your job
@@ -238,7 +233,6 @@ def ST(ST_inputs):
             p4i = p3 - (p3-p4)*(i+1)/reheat #donné dans les arguments
             s4is = s_pre #détente isentropique
             h4is = steamTable.h_ps(p4i,s4is) #attention on est ni à saturation, ni sous la courbe! => à checker
-            print(s_pre)
             h4i = h_pre-(h_pre-h4is)*eta_SiT
             x4i = None #check que ça doit pas passer sous la courbe?
             T4i = steamTable.t_ph(p4i,h4i)+273.15#K
@@ -284,242 +278,252 @@ def ST(ST_inputs):
     """
     6) FWH
     """
-    #trouver l 'etat 2'
-    T2_prime = steamTable.tsat_p(p3)+273.15
-    h2_prime = steamTable.hL_p(p3)
-    s2_prime =steamTable.sL_p(p3)
+    if nsout!= 0:
+        #trouver l 'etat 2'
+        T2_prime = steamTable.tsat_p(p3)+273.15-100
+        h2_prime = steamTable.hL_p(p3)
+        s2_prime =steamTable.sL_p(p3)
 
+        nsout = 2
+        T101 = T10+15
 
-    #premiere estimation de T81
-    deltaT = (T2_prime-T7)/(nsout+1)
-    T8i = np.arange(T7+deltaT,T2_prime,deltaT)
-    # T81 = T8i[0]
-    # T82 = T8i[1]
+        def function_FHW_T81(x):# x = [T81,T82,...,T8n,X]
 
-    X_bleedings = 0.1*np.ones(nsout)
-    if nsout != 1:
-        initial = np.append(T8i,X_bleedings[1:])
-    else :
-        initial = T8i
-    #feexing the inlet temperature
-    #T101 = T10+15
-    #T102 = T02+10
+            if nsout ==1:
+                T8i = np.array([x[0]])
+                T101 = x[1]
 
+            else:
 
-    def function_FHW_T81(x):# x = [T81,T82,...,T8n, X2,X3,X4,...,Xn]
+                T8i = x[0:nsout]
+                Xis = x[nsout:]
+                X2= Xis[0]
 
-        if nsout ==1:
-            T8i = np.array([x[0]])
-            T101 = x[1]
+            if nsout>=3 :
+                number_add_Xis = nsout-2
+                Xis_add = X2*np.ones(nsout-2)
+                Xis = np.append(X2,Xis_add)
+                for i in range(len(Xis)-1):
+                    Xis[i+1] = Xis[i]/3
 
+            # T81=x[0]
+            # T82= x[1]
+            # X2 = x[2]
 
-        else:
+            """
+            This function computes the energy balance at the exchanger condenser and
+            the exchanger subcooler for one feed heating
+            INPUTS :  x (T81) estimated temperature at the exit of the condenser
+            y (T101) estimated temperature between the two exchangers for the cold fluid
+            """
 
-            T8i = x[0:nsout]
+            # h81 = steamTable.hL_t(T81-273.15) #kJ/kg_v
+            # p81 = steamTable.psat_t(T81-273.15) #bar
+            # h82 = steamTable.hL_t(T82-273.15) #kJ/kg_v
+            # p82 = steamTable.psat_t(T82-273.15) #bar
+            h8i=np.zeros(len(T8i))
+            p8i=np.zeros(len(T8i))
 
-            Xis = x[nsout:]
+            #find state 61
 
-            X2= Xis[0]
+            for i in range(len(T8i)):
+                h8i[i] =  steamTable.hL_t(T8i[i]-273.15)
+                p8i[i] = steamTable.psat_t(T8i[i]-273.15)
 
-        # T81=x[0]
-        # T82= x[1]
-        # X2 = x[2]
+            p6i = p8i
+            h6si = np.zeros(len(T8i))
+            #find state 61
+            for j in range(len(T8i)):
+                h6si[j]= steamTable.h_ps(p8i[j],s_pre)
 
-        """
-        This function computes the energy balance at the exchanger condenser and
-        the exchanger subcooler for one feed heating
-        INPUTS :  x (T81) estimated temperature at the exit of the condenser
-        y (T101) estimated temperature between the two exchangers for the cold fluid
-        """
-
-        # h81 = steamTable.hL_t(T81-273.15) #kJ/kg_v
-        # p81 = steamTable.psat_t(T81-273.15) #bar
-        # h82 = steamTable.hL_t(T82-273.15) #kJ/kg_v
-        # p82 = steamTable.psat_t(T82-273.15) #bar
-        h8i=np.zeros(len(T8i))
-        p8i=np.zeros(len(T8i))
-
-        #find state 61
-
-        for i in range(len(T8i)):
-            h8i[i] =  steamTable.hL_t(T8i[i]-273.15)
-            p8i[i] = steamTable.psat_t(T8i[i]-273.15)
-
-        p6i = p8i
-        h6si = np.zeros(len(T8i))
-        #find state 61
-        for j in range(len(T8i)):
-            h6si[j]= steamTable.h_ps(p8i[j],s_pre)
-
-        # p61=p81 #isobare
-        # h61s = steamTable.h_ps(p81,s_pre)
-        # h61 = -eta_SiT*(h_pre-h61s)+h_pre
-        #
-        #
-        # #find state 62
-        # p62=p82 #isobare
-        # h62s = steamTable.h_ps(p82,s_pre)
-        # h62 = -eta_SiT*(h_pre-h62s)+h_pre
-
-        h6i = -eta_SiT*(h_pre-h6si)+h_pre
-
-        # T102 = T81-TpinchEx#K
-        # h102=steamTable.h_pt(p10,T102-273.15)
-        #
-        # T1 = T82-TpinchEx#K
-        # h1=steamTable.h_pt(p10,T1-273.15)
-        # print(T1,'first')
-
-        T101=T10+15#K
-        h101 = steamTable.h_pt(p10,T101-273.15)
-
-        T10i = T8i-TpinchEx
-        h10i = np.zeros(len(T8i))
-
-        for k in range(len(T8i)):
-            h10i[k] = steamTable.h_pt(p10,T10i[k]-273.15)
-
-        T1,h1 = T10i[-1],h10i[-1]
-
-        T10i,h10i = np.append(T101,T10i),np.append(h101,h10i) # (h101,h102,...h10n,h1) longueur n+1
-
-        p81 = p8i[0]
-        T9 = T10+TpinchSub #K
-        h9 = steamTable.h_pt(p81,T9-273.15)
-
-        #enthalpie ratio #premiere estmation
-        #X1= ((1+X2)*(h1-h10)+X2*(h9-h62))/(h61-h9+h10-h1)
-        #X1 = (X2*(-h62+h1-h101+h81)+h1-h101)/(h61-h1+h101-h81)
-
-        if nsout ==1:
-            X1= (h1-h10)/(h6i[0]-h1+h10-h9)
-        elif nsout ==2:
-            X1 = (X2*(-h6i[1]+h8i[0])+(1+X2)*(h1-h10i[0]))/(h6i[0]-h1+h10i[0]-h8i[0])
-
-        else :
-            sumXi_3_n = sum(Xis[1:])
-            sumXi_2_n = sum(Xis[0:])
-            X1= X2*((-h6i[1]+h8i[0])+(1+sumXi_2_n)*(h10i[2]-h10i[0])-sumXi_3_n*(h8i[2]-h8i[0]))/(h6i[0]-h10i[2]+h10i[0]-h8i[0])
-
-        #"First"
-        #h10 = h101,h102,...hh10n,h1
-        if nsout == 1:
-            Fone = X1*(h8i[0]-h9)-(1+X1)*(h101-h10)
-            Flast = X1*(h6i[-1]-h8i[-1])-(1+X1)*(h10i[-1]-h10i[-2])
-            Functions = np.array([Fone,Flast])
-        else:
-
-            Xis = np.append(X1,Xis)
-            sumXi = sum(Xis)
-            Fone = sumXi*(h8i[0]-h9)-(1+sumXi)*(h101-h10)
-            Fa = np.zeros(nsout-1)
-            for i in range(len(Fa)):
-                a = i+1
-                sumXi_aplus_n = sum(Xis[a:])
-                Fa[i] = sumXi_aplus_n*(h8i[a]-h8i[a-1])+Xis[a-1]*(h6i[a-1]-h8i[a-1])-(1+sumXi)*(h10i[a]-h10i[a-1])# c est chaud pour les notations
-            Flast = Xis[-1]*(h6i[-1]-h8i[-1])-(1+sumXi)*(h10i[-1]-h10i[-2])
-            #print(F1,Fa,Flast)
+            # p61=p81 #isobare
+            # h61s = steamTable.h_ps(p81,s_pre)
+            # h61 = -eta_SiT*(h_pre-h61s)+h_pre
             #
-            # F1 = (1+X1+X2)*(h1-h102)-X2*(h62-h82)
-            # F2 = (1+X1+X2)*(h101-h10)-(X1+X2)*(h81-h9)
-            # F3 = (1+X1+X2)*(h102-h101)-X1*(h61-h81)-X2*(h82-h81)
-            #print(F2,F3,F1)
-            Functions = np.append(Fone,Fa)
-            Functions = np.append(Functions,Flast)
+            #
+            # #find state 62
+            # p62=p82 #isobare
+            # h62s = steamTable.h_ps(p82,s_pre)
+            # h62 = -eta_SiT*(h_pre-h62s)+h_pre
 
-            #print(F2,Fone)
+            h6i = -eta_SiT*(h_pre-h6si)+h_pre
 
-        return Functions
+            # T102 = T81-TpinchEx#K
+            # h102=steamTable.h_pt(p10,T102-273.15)
+            #
+            # T1 = T82-TpinchEx#K
+            # h1=steamTable.h_pt(p10,T1-273.15)
+            # print(T1,'first')
 
-    #print(function_FHW_T81(np.array([0.5*(T2_prime+T7)])))
-    print(initial,'initial')
+            T101=T10+15#K
+            h101 = steamTable.h_pt(p10,T101-273.15)
 
-    initial = np.array([399.6405587459073,426.4747133547441,0.06037085620235728])
-    T81,T82,X2= fsolve(function_FHW_T81,initial)
-    T101 = T10+15
-    print(T81,T82,X2)
-    # T81,T101 = fsolve(function_FHW_T81,np.array([0.5*(T2_prime+T7),0.5*(T10+T7)]))
-    # print('T81',T81,T101)
+            T10i = T8i-TpinchEx
+            h10i = np.zeros(len(T8i))
 
-    """
-    7) Alimentation pump
-    """
-    T1= T81-TpinchEx#K
-    p1 = p10
-    h1= steamTable.h_pt(p1,T1-273.15)
-    s1= steamTable.s_pt(p1,T1-273.15)
-    x1 = None
-    v1 = steamTable.v_pt(p1,T1-273.15)
-    e1 = h1-T0*s1#kJ/kg
-    results[:,2]=T1-273.15,p1,h1,s1,x1,e1
+            for k in range(len(T8i)):
+                h10i[k] = steamTable.h_pt(p10,T10i[k]-273.15)
+
+            T1,h1 = T10i[-1],h10i[-1]
+
+            T10i,h10i = np.append(T101,T10i),np.append(h101,h10i) # (h101,h102,...h10n,h1) longueur n+1
+
+            p81 = p8i[0]
+            T9 = T10+TpinchSub #K
+            h9 = steamTable.h_pt(p81,T9-273.15)
+
+            #enthalpie ratio #premiere estmation
+            #X1= ((1+X2)*(h1-h10)+X2*(h9-h62))/(h61-h9+h10-h1)
+            #X1 = (X2*(-h62+h1-h101+h81)+h1-h101)/(h61-h1+h101-h81)
+
+            if nsout ==1:
+                X1= (h1-h10)/(h6i[0]-h1+h10-h9)
+            elif nsout ==2:
+                X1 = (X2*(-h6i[1]+h8i[0])+(1+X2)*(h1-h10i[0]))/(h6i[0]-h1+h10i[0]-h8i[0])
+
+            else :
+                sumXi_3_n = sum(Xis[1:])
+                sumXi_2_n = sum(Xis[0:])
+                X1= X2*((-h6i[1]+h8i[0])+(1+sumXi_2_n)*(h10i[2]-h10i[0])-sumXi_3_n*(h8i[2]-h8i[0]))/(h6i[0]-h10i[2]+h10i[0]-h8i[0])
+
+            #"First"
+            #h10 = h101,h102,...hh10n,h1
+            if nsout == 1:
+                Fone = X1*(h8i[0]-h9)-(1+X1)*(h101-h10)
+                Flast = X1*(h6i[-1]-h8i[-1])-(1+X1)*(h10i[-1]-h10i[-2])
+                Functions = np.array([Fone,Flast])
+            else:
+
+                Xis = np.append(X1,Xis)
+                sumXi = sum(Xis)
+                Fone = sumXi*(h8i[0]-h9)-(1+sumXi)*(h101-h10)
+                Fa = np.zeros(nsout-1)
+                for i in range(len(Fa)):
+                    a = i+1
+                    sumXi_aplus_n = sum(Xis[a:])
+                    Fa[i] = sumXi_aplus_n*(h8i[a]-h8i[a-1])+Xis[a-1]*(h6i[a-1]-h8i[a-1])-(1+sumXi)*(h10i[a]-h10i[a-1])# c est chaud pour les notations
+                Flast = Xis[-1]*(h6i[-1]-h8i[-1])-(1+sumXi)*(h10i[-1]-h10i[-2])
+                #print(F1,Fa,Flast)
+                #
+                # F1 = (1+X1+X2)*(h1-h102)-X2*(h62-h82)
+                # F2 = (1+X1+X2)*(h101-h10)-(X1+X2)*(h81-h9)
+                # F3 = (1+X1+X2)*(h102-h101)-X1*(h61-h81)-X2*(h82-h81)
+                #print(F2,F3,F1)
+                Functions = np.append(Fone,Fa)
+                Functions = np.append(Functions,Flast)
+                print(Functions)
 
 
-    p2=p3_hp#bar
-    h2=v1*(p2-p1)*10**2/eta_SiC+h1#kJ/kg
-    T2= steamTable.t_ph(p2,h2)+273.15#K
-    s2 = steamTable.s_ph(p2,h2)
-    x2= None # eau non saturée
-    e2 = h2-T0*s2#kJ/kg
-    results[:,3]=T2-273.25,p2,h2,s2,x2,e2
+                #print(F2,Fone)
 
-    Q1 += h3-h2
-    Q_boiler_exergie = e3-e2
+            return Functions
 
-    """
-    8) FWH states
-    """
+        #premiere estimation de T81
+        def initial(nsout):
+            deltaT = (T2_prime-T7)/(nsout+1)
+            T8i = np.arange(T7+deltaT,T2_prime,deltaT)
+            # T81 = T8i[0]
+            # T82 = T8i[1]
 
-    # state 81
-    h81 = steamTable.hL_t(T81-273.15)
-    p81 = steamTable.psat_t(T81-273.15)#bar
-    s81 = steamTable.sL_t(T81-273.15) #kJ/kg
-    x81=0
-    e81 = h81-T0*s81
-    i=0 # i =range(nsout)
-    results[:,7]=T81-273.15,p81,h81,s81,x81,e81
+            #X_bleedings = 0.1*np.ones(nsout)
+            if nsout != 1:
+                X2 = 0.1
+                initial = np.append(T8i,0.1)
+            else :
+                initial = T8i
+            return initial
 
-    #state 6I
-    p61=p81 #isobare
-    h61s = steamTable.h_ps(p61,s_pre)
-    h61 = -eta_SiT*(h_pre-h61s)+h_pre
-    T61 = steamTable.t_ph(p61,h61)+273.15
-    s61 = steamTable.s_ph(p61,h61)
-    x61 = None
-    e61 = h61-T0*s61
-    results[:,6]=T61-273.35,p61,h61,s61,x61,e61
+        print(function_FHW_T81(initial(nsout)))
 
-    #state 91
-    T91 = T10+TpinchSub #K
-    h91 = steamTable.h_pt(p81,T91-273.15)
-    s91 = steamTable.s_pt(p81,T91-273.15)
-    p91 = p81
-    x91 = None
-    e91 = h91-T0*s91
-    results[:,8]=T91-273.35,p91,h91,s91,x91,e91
 
-    #state 91_postvanne
-    h91_postvanne = h91
-    x91_postvanne = steamTable.x_ph(p7,h91)
+        T101 = T10+15
+        T81,T82,X2= fsolve(function_FHW_T81,initial(nsout))
+        print(T81,T82,X2)
 
-    #state 101
-    h101 = steamTable.h_pt(p10,T101-273.15)
-    s101 = steamTable.s_pt(p10,T101-273.15)
-    p101 = p10
-    x101 = None
-    e101 = h101-T0*s101
-    results[:,9]=T101-273.35,p101,h101,s101,x101,e101
+        """
+        7) Alimentation pump
+        """
+        T1= T81-TpinchEx#K
+        p1 = p10
+        h1= steamTable.h_pt(p1,T1-273.15)
+        s1= steamTable.s_pt(p1,T1-273.15)
+        x1 = None
+        v1 = steamTable.v_pt(p1,T1-273.15)
+        e1 = h1-T0*s1#kJ/kg
+        results[:,2]=T1-273.15,p1,h1,s1,x1,e1
 
-    #bleed proportion
-    X= (h1-h10)/(h61-h1+h10-h91)
 
-    Wm_t += (1/(1+X))*(h_pre-h6) + (X/(1+X))*(h_pre-h61)
-    Wm_tmax += (1/(1+X))*(e_pre-e6) + (X/(1+X))*(e_pre-e61)
-    L_turbine_mv += (1/(1+X))*T0*(s6-s_pre) + (X/(1+X))*T0*(s61-s_pre)
+        p2=p3_hp#bar
+        h2=v1*(p2-p1)*10**2/eta_SiC+h1#kJ/kg
+        T2= steamTable.t_ph(p2,h2)+273.15#K
+        s2 = steamTable.s_ph(p2,h2)
+        x2= None # eau non saturée
+        e2 = h2-T0*s2#kJ/kg
+        results[:,3]=T2-273.25,p2,h2,s2,x2,e2
 
+        Q1 += h3-h2
+        Q_boiler_exergie = e3-e2
+
+        """
+        8) FWH states
+        """
+
+        # state 81
+        h81 = steamTable.hL_t(T81-273.15)
+        p81 = steamTable.psat_t(T81-273.15)#bar
+        s81 = steamTable.sL_t(T81-273.15) #kJ/kg
+        x81=0
+        e81 = h81-T0*s81
+        i=0 # i =range(nsout)
+        results[:,7]=T81-273.15,p81,h81,s81,x81,e81
+
+        #state 6I
+        p61=p81 #isobare
+        h61s = steamTable.h_ps(p61,s_pre)
+        h61 = -eta_SiT*(h_pre-h61s)+h_pre
+        T61 = steamTable.t_ph(p61,h61)+273.15
+        s61 = steamTable.s_ph(p61,h61)
+        x61 = None
+        e61 = h61-T0*s61
+        results[:,6]=T61-273.35,p61,h61,s61,x61,e61
+
+        #state 91
+        T91 = T10+TpinchSub #K
+        h91 = steamTable.h_pt(p81,T91-273.15)
+        s91 = steamTable.s_pt(p81,T91-273.15)
+        p91 = p81
+        x91 = None
+        e91 = h91-T0*s91
+        results[:,8]=T91-273.35,p91,h91,s91,x91,e91
+
+        #state 91_postvanne
+        h91_postvanne = h91
+        x91_postvanne = steamTable.x_ph(p7,h91)
+
+        #state 101
+        h101 = steamTable.h_pt(p10,T101-273.15)
+        s101 = steamTable.s_pt(p10,T101-273.15)
+        p101 = p10
+        x101 = None
+        e101 = h101-T0*s101
+        results[:,9]=T101-273.35,p101,h101,s101,x101,e101
+
+        #bleed proportion
+        X= (h1-h10)/(h61-h1+h10-h91)
+
+        Wm_t += (1/(1+X))*(h_pre-h6) + (X/(1+X))*(h_pre-h61)
+        Wm_tmax += (1/(1+X))*(e_pre-e6) + (X/(1+X))*(e_pre-e61)
+        L_turbine_mv += (1/(1+X))*T0*(s6-s_pre) + (X/(1+X))*T0*(s61-s_pre)
+
+    else:
+        Wm_t += (h_pre-h6)
+        Wm_tmax += (e_pre-e6)
+        L_turbine_mv += (s6-s_pre)
 
     """
     9) Condenser
     """
+
     Q2 = 1/(1+X)*(h6-h7) + X/(1+X)*(h91-h7)
      # kJ/kg_v
     massflow_condenser_coeff = Q2/(steamTable.CpL_t(T_cond_out-273.15)*(T_cond_out-T_ext))
@@ -600,6 +604,8 @@ def ST(ST_inputs):
     """
     16) Computation of exergy losses
     """
+
+
     L_comb = boiler_outputs.L_comb #kW
     L_HR = boiler_outputs.L_HR
     L_exhaust = boiler_outputs.L_exhaust
