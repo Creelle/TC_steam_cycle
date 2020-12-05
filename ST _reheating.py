@@ -98,7 +98,7 @@ def ST(ST_inputs):
         p3_hp =80 #bar
     eta_mec = arg_in.eta_mec;
     if eta_mec == -1.:
-        eta_mec = 0.95 #[-]
+        eta_mec = 0.98 #[-]
 
 
     comb = arg_in.combustion
@@ -148,7 +148,7 @@ def ST(ST_inputs):
 
     eta_SiC = arg_in.eta_SiC;
     if eta_SiC == -1.:
-        eta_SiC = 0.89
+        eta_SiC = 0.85
     eta_SiT = arg_in.eta_SiT;
     if eta_SiT == -1.:
         eta_SiT = 0.89
@@ -156,7 +156,8 @@ def ST(ST_inputs):
     # Put all temperatures in Kelvin
     T_max,T_cond_out, T_exhaust, T0, T_ext, T_drum= T_max+273.15,T_cond_out+273.15, T_exhaust+273.15, T0+273.15, T_ext+273.15, Tdrum +273.15 #K
 
-    results = np.zeros((6,5+2*nsout+2*reheat)) # 6 initial states, states 1,2,3,6,7 if no reheat then 7 = 1 states 4 and 5 is for the reheating
+    results = np.zeros((6,5+2*reheat)) # 4 initial states, states 1,2,3,6 ,if reheat /= 0 then we add 2 columns * number of reheat in the final data outputs
+    # these 2 columns are for the stream after the intermidiate turbines and the stream reheated heading to the next turbine.
     #results = np.zeros((6,6))
     ## cycle definition
     # =================
@@ -177,6 +178,12 @@ def ST(ST_inputs):
     #                           are the losses negligible compare to the useful energy?
     #        As a conclusion, what can we do to decrease this loss?
 
+    Q1 = 0 #chaleur fournie au boiler
+    Q_boiler_exergie = 0 #bilan exergie au boiler
+    Wm_t = 0 #kJ/kg_v
+    Wm_tmax = 0 #kJ/kg_v
+    L_turbine_mv =0 #il faudra faire * mv plus tard
+
     """
     1) Pump
     """
@@ -189,6 +196,8 @@ def ST(ST_inputs):
     e1 = h1-T0*s1#kJ/kg
     results[:,0]=T1-273.15,p1,h1,s1,x1,e1
 
+    print(T1-273.15,p1,h1,s1,x1,e1)
+
     p2=p3_hp#bar
     #s2=s1
     # h2s=steamTable.h_ps(p2,s1)
@@ -199,6 +208,8 @@ def ST(ST_inputs):
     x2= None # eau non saturée
     e2 = h2-T0*s2#kJ/kg
     results[:,1]=T2-273.25,p2,h2,s2,x2,e2
+
+    print(T2-273.25,p2,h2,s2,x2,e2)
 
     """
     2) Boiler
@@ -212,37 +223,80 @@ def ST(ST_inputs):
     x3 = None # vapeur surchauffée
     e3 = h3-T0*s3#kJ/kg
     results[:,2]=T3-273.35,p3,h3,s3,x3,e3
+    print(T3-273.35,p3,h3,s3,x3,e3)
 
-    Q1 = h3-h2 #kJ/kg_v
-
-    """
-    5) High Pressure Turbine
-    """
-    p5 = p4 #p5 est donné dans les arguments
-    s5s = s3 #détente isentropique
-    h5s = steamTable.h_ps(p5,s5s) #attention on est ni à saturation, ni sous la courbe! => à checker
-    h5 = h3-(h3-h5s)*eta_SiT
-    x5 = None
-    T5 = steamTable.t_ph(p5,h5)+273.15#K
-    s5 = steamTable.s_ph(p5,h5)
-    e5 = h5-T0*s5 #kJ/kg#kJ/kg
-    results[:,3]=T5-273.15,p5,x5,h5,s5,e5
+    Q1 += h3-h2 #kJ/kg_v
+    Q_boiler_exergie += e3 - e2
 
     """
-    7) After reheating
+    Here we begin the code vectorization because we want to add the number of reheating that we want
     """
-    p7 = p4 # on considère que la combustion se fait sans perte de charge
-    T7 = T3
-    h7 = steamTable.h_pt(p7,T7-273.15)
-    s7 = steamTable.s_pt(p7,T7-273.15)
-    x7 = None
-    e7 = h7-T0*s7
-    results[:,4]=T7-273.15,p7,x7,h7,s7,e7
+    for i in range (0,reheat):
+
+            h_pre = results[2][2+2*i]
+            s_pre = results[3][2+2*i]
+            e_pre = results[5][2+2*i]
+            p4i = p3 - (p3-p4)*(i+1)/reheat #donné dans les arguments
+            # p4i = p3 - (p3-p4)*(i+1)/(reheat*2) #une autre manière de cut la pression
+            s4is = s_pre #détente isentropique
+            h4is = steamTable.h_ps(p4i,s4is) #attention on est ni à saturation, ni sous la courbe! => à checker
+            h4i = h_pre-(h_pre-h4is)*eta_SiT
+            x4i = None #check que ça doit pas passer sous la courbe?
+            T4i = steamTable.t_ph(p4i,h4i)+273.15#K
+            s4i = steamTable.s_ph(p4i,h4i)
+            e4i = h4i-T0*s4i #kJ/kg#kJ/kg
+            results[:,2+2*i+1]=T4i-273.15,p4i,h4i,s4i,x4i,e4i
+
+            print(T4i-273.15,p4i,h4i,s4i,x4i,e4i)
+
+            Wm_t += h_pre-h4i
+            Wm_tmax += e_pre-e4i
+            L_turbine_mv += T0*(s4i-s_pre)
+
+            p5i = p4i # on considère que la combustion se fait sans perte de charge
+            T5i = T3
+            h5i = steamTable.h_pt(p5i,T5i-273.15)
+            s5i = steamTable.s_pt(p5i,T5i-273.15)
+            x5i = None
+            e5i = h5i-T0*s5i
+            results[:,2+2*i+2]=T5i-273.15,p5i,h5i,s5i,x5i,e5i
+            print(T5i-273.15,p5i,h5i,s5i,x5i,e5i)
+
+            Q1 += (h5i-h4i)
+            Q_boiler_exergie += e5i-e4i
+
+    # """
+    # 5) High Pressure Turbine
+    # """
+    # p5 = p4 #p5 est donné dans les arguments
+    # s5s = s3 #détente isentropique
+    # h5s = steamTable.h_ps(p5,s5s) #attention on est ni à saturation, ni sous la courbe! => à checker
+    # h5 = h3-(h3-h5s)*eta_SiT
+    # x5 = None
+    # T5 = steamTable.t_ph(p5,h5)+273.15#K
+    # s5 = steamTable.s_ph(p5,h5)
+    # e5 = h5-T0*s5 #kJ/kg#kJ/kg
+    # results[:,3]=T5-273.15,p5,x5,h5,s5,e5
+    #
+    # """
+    # 7) After reheating
+    # """
+    # p7 = p4 # on considère que la combustion se fait sans perte de charge
+    # T7 = T3
+    # h7 = steamTable.h_pt(p7,T7-273.15)
+    # s7 = steamTable.s_pt(p7,T7-273.15)
+    # x7 = None
+    # e7 = h7-T0*s7
+    # results[:,4]=T7-273.15,p7,x7,h7,s7,e7
 
 
     """
     3) Turbine
     """
+    s_pre = results[3][2+2*reheat]
+    h_pre = results[2][2+2*reheat]
+    e_pre = results[5][2+2*reheat]
+
     p6 = p1 # on considère que l'échange de chaleur se fait sans perte de charge
     #s6s = s7 #détente isentropique sous la courbe de saturation
     #je connais x6
@@ -250,10 +304,13 @@ def ST(ST_inputs):
     s6 = steamTable.s_ph(p6,h6)
     T6 = steamTable.t_ph(p6,h6)+273.15#K
     e6 = h6-T0*s6 #kJ/kg#kJ/kg
-    results[:,5]=T6-273.15,p6,x6,h6,s6,e6
+    results[:,3+2*reheat]=T6-273.15,p6,x6,h6,s6,e6
 
+    print(T6-273.15,p6,x6,h6,s6,e6)
 
-
+    Wm_t += h_pre-h6
+    Wm_tmax += e_pre-e6
+    L_turbine_mv += T0*(s6-s_pre)
     # p6=p1
     # h6s = steamTable.h_ps(p1,s3)
     # h62= h3-(h3-h6s)*eta_SiT
@@ -265,10 +322,6 @@ def ST(ST_inputs):
     # T6 = steamTable.t_ph(p6,h6)+273.15#K
     # e6 = h6-T0*s6 #kJ/kg#kJ/kg
     # results[:,3]=T6-273.65,p6,h6,s6,x6,e6
-
-    Q1 = Q1 + (h7-h5)
-
-
 
     """
     4) Condenser
@@ -289,16 +342,15 @@ def ST(ST_inputs):
     # print(h_lv+Cpl*(T6-T1),Q2,"here")
     # print('Cpl',Cpl,steamTable.CpL_t(T1-273.15))
     #results del l 'etat 7
-    results[:,4]=T1-273.15,p1,h1,s1,x1,e1
+    #results[:,4+2*reheat]=T1-273.15,p1,h1,s1,x1,e1
 
     """
     5) Mechanical work:
     """
-    Wm_t = h3-h5 + h7 - h6
-    Wm_tmax = e3-e5 + e7 - e6
     Wm_c = h2-h1
     Wm_cmax = e2-e1
     Wm = Wm_t-Wm_c
+    print(Wm)
     Wm_max = Wm_tmax-Wm_cmax
 
     """
@@ -341,20 +393,21 @@ def ST(ST_inputs):
     e_boiler_in = boiler_outputs.e_boiler_in
     e_boiler_out = boiler_outputs.e_boiler_out#kJ/kg_f aka e_ech
 
-    eta_cyclex =Wm/(e3-e2+e7-e5)
+    #eta_cyclex =Wm/(e3-e2+e7-e5)
+    eta_cyclex =Wm/Q_boiler_exergie
     eta_rotex = Wm/Wm_max
 
     eta_combex = boiler_outputs.eta_combex
     eta_chemex = boiler_outputs.eta_chemex
-    eta_transex =mv*(e3-e2+e7-e5)/(mf*(e_boiler_in-e_boiler_out)) # echange au boiler
+    eta_transex =mv*Q_boiler_exergie/(mf*(e_boiler_in-e_boiler_out)) # echange au boiler
     #print(eta_combex, eta_chemex,eta_transex)
 
 
-    eta_gex=mv*(e3-e2+e7-e5)/(mc*ec)
-    eta_gex2= eta_combex*eta_chemex*eta_transex
+    eta_gex=mv*Q_boiler_exergie/(mc*ec)
+    # eta_gex2= eta_combex*eta_chemex*eta_transex
     #print(eta_gex,eta_gex2)
     eta_totex = eta_cyclex*eta_gex*eta_mec
-    eta_totex2 = Pe/(mc*ec)
+    # eta_totex2 = Pe/(mc*ec)
     #print(eta_totex,eta_totex2)
     #print("eta_combex",eta_combex,"eta_chemex",eta_chemex,'eta_transex',eta_transex,"eta_gex",eta_gex,"eta_rotex",eta_rotex,'eta_cyclex',eta_cyclex,"eta_totex",eta_totex,'eta_gen',eta_gen)
     eta_condex = 0
@@ -368,10 +421,10 @@ def ST(ST_inputs):
 
 
 
-    L_boiler = mv*(e2-e3+e5-e7)+mf*(e_boiler_in-e_boiler_out)
-    print(L_boiler)
+    L_boiler = mv*(-Q_boiler_exergie)+mf*(e_boiler_in-e_boiler_out) #à checekr
+    # print(L_boiler)
 
-    L_turbine = T0*(s5-s3+s6-s7)*mv
+    L_turbine = L_turbine_mv*mv
     L_pump = T0*(s2-s1)*mv#kW
 
     L_cond=mv*(e6-e1)+mv*massflow_condenser_coeff*(e_cond_water_in-e_cond_water_out)
@@ -409,31 +462,42 @@ def ST(ST_inputs):
     """
     13) Pie charts and cycle graphs
     """
-    # pie chart of the energie flux in the cycle
-    fig,ax =  plt.subplots(figsize=(6, 3), subplot_kw=dict(aspect="equal"))
-    data = [Pe,Pf_mec,P_cond,P_chimney]
-    labels = ['Useful power {v} [MW]'.format(v=round(Pe/1000)),'Mechanical losses {v} [MW]'.format(v=round(Pf_mec/1000)),'Condensor losses {v} [MW]'.format(v=round(P_cond/1000)),'Chimney losses {v} [MW]'.format(v=round(P_chimney/1000))]
-
-    ax.pie(data,labels = labels,autopct='%1.2f%%',startangle = 90)
-    ax.set_title("Primary energetic flux "+ str(round(P_prim/1000)) + "[MW]")
-
-    # pie chart of the exergie flux in the cycle
-    fig2,ax =  plt.subplots(figsize=(6, 3), subplot_kw=dict(aspect="equal"))
-    data = [Pe,Pf_mec,L_turbine+L_pump,L_cond,L_boiler,L_HR,L_comb,L_exhaust]
-    labels = ['Useful power {v} [MW]'.format(v=round(Pe/1000)),'Mechanical losses {v} [MW]'.format(v=round(Pf_mec/1000)),' \n \n Turbine and \n pump losses {v} [MW]'.format(v=round((L_turbine+L_pump)/1000)),
-              'Condenser losses {v} [MW]'.format(v=round(L_cond/1000)),'Boiler losses {v} [MW]'.format(v=round(L_boiler/1000)),
-              'Heat recovery losses {v} [MW]'.format(v=round(L_HR/1000)),'Combustion losses {v} [MW]'.format(v=round(L_comb/1000)),
-              'Chimney losses {v} [MW]'.format(v=round(L_exhaust/1000))]
-    plt.savefig('figures/energie_pie.png')
-
-    ax.pie(data,labels = labels,autopct="%1.2f%%",startangle = 90)
-    ax.set_title("Primary exergetic flux "+ str(round(ec*mc/1000)) + "[MW]")
-    plt.savefig('figures/exergie_pie.png')
-
-    fig = [fig,fig2]
-    outputs.fig = fig
-    if (ST_inputs.DISPLAY == 1):
-        plt.show()
+    # # pie chart of the energie flux in the cycle
+    # fig,ax =  plt.subplots(figsize=(6, 3), subplot_kw=dict(aspect="equal"))
+    # data = [Pe,Pf_mec,P_cond,P_chimney]
+    # labels = ['Useful power {v} [MW]'.format(v=round(Pe/1000)),'Mechanical losses {v} [MW]'.format(v=round(Pf_mec/1000)),'Condensor losses {v} [MW]'.format(v=round(P_cond/1000)),'Chimney losses {v} [MW]'.format(v=round(P_chimney/1000))]
+    #
+    # ax.pie(data,labels = labels,autopct='%1.2f%%',startangle = 90)
+    # ax.set_title("Primary energetic flux "+ str(round(P_prim/1000)) + "[MW]")
+    #
+    # # pie chart of the exergie flux in the cycle
+    # fig2,ax =  plt.subplots(figsize=(6, 3), subplot_kw=dict(aspect="equal"))
+    # data = [Pe,Pf_mec,L_turbine+L_pump,L_cond,L_boiler,L_HR,L_comb,L_exhaust]
+    # labels = ['Useful power {v} [MW]'.format(v=round(Pe/1000)),'Mechanical losses {v} [MW]'.format(v=round(Pf_mec/1000)),' \n \n Turbine and \n pump losses {v} [MW]'.format(v=round((L_turbine+L_pump)/1000)),
+    #           'Condenser losses {v} [MW]'.format(v=round(L_cond/1000)),'Boiler losses {v} [MW]'.format(v=round(L_boiler/1000)),
+    #           'Heat recovery losses {v} [MW]'.format(v=round(L_HR/1000)),'Combustion losses {v} [MW]'.format(v=round(L_comb/1000)),
+    #           'Chimney losses {v} [MW]'.format(v=round(L_exhaust/1000))]
+    # plt.savefig('figures/energie_pie.png')
+    #
+    # ax.pie(data,labels = labels,autopct="%1.2f%%",startangle = 90)
+    # ax.set_title("Primary exergetic flux "+ str(round(ec*mc/1000)) + "[MW]")
+    # plt.savefig('figures/exergie_pie.png')
+    #
+    # fig = [fig,fig2]
+    # outputs.fig = fig
+    # if (ST_inputs.DISPLAY == 1):
+    #     plt.show()
+    """
+    Diagramme plots
+    """
+    # p_sat = np.linspace(0,10,100)
+    # t_sat = np.zeros(len(p_sat))
+    # s_sat = np.zeros(len(p_sat))
+    # for i in range (0,len(p_sat)):
+    #     t_sat[i] = steamTable.tsat_p(p_sat[i])
+    #     s_sat[i] = steamTable.s_pt(p_sat[i],t_sat[i])
+    # plt.plot(s_sat,t_sat)
+    # plt.show()
 
     return outputs;
 
@@ -446,6 +510,23 @@ def ST(ST_inputs):
 
 ST_inputs = ST_arg.ST_inputs();
 ST_inputs.Pe = 35.0e3 #[kW]
+# ST_inputs.reheat = 1 #[kW]
 ST_inputs.DISPLAY = 0
-answers = ST(ST_inputs);
-print(answers.dat)
+# answers = ST(ST_inputs);
+# print(answers.eta)
+
+
+reheat = 10
+x = np.linspace(0,reheat,reheat+1)
+y = np.zeros(len(x))
+
+
+for i in range (0,len(x)):
+    ST_inputs.reheat = int(x[i]) #[kW]
+    answers = ST(ST_inputs);
+    y[i] = answers.eta[0]
+plt.plot(x,y)
+plt.title("\u03B7 cyclen vs number of reheating")
+plt.ylabel("\u03B7 cyclen [/]")
+plt.xlabel("Number of reheating [/]")
+plt.show()
