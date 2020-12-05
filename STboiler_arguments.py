@@ -27,8 +27,8 @@ class boiler_input:
                      LHV =50150,
                      T_ext = 15,#°C
                      # T_exhaust = 150,#°C
-                     TpinchHR = 80,#°C
-                     T_exhaust = 150,#°C
+                     TpinchHR = 30,#°C
+                     T_exhaust = 50,#°C
                      x = 0,
                      y =4,
                      Tdb = 30, # °C

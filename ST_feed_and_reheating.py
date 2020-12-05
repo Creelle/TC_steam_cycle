@@ -333,11 +333,11 @@ def ST(ST_inputs):
     h61s = (h61-h_pre)/eta_SiT+h_pre
     h62s = (h62-h_pre)/eta_SiT+h_pre
 
-    p81 = steamTable.p_hs(h61s,s3)
+    p81 = steamTable.p_hs(h61s,s_pre)
     T81 = steamTable.tsat_p(p81)+273.15
     h81 = steamTable.hL_t(T81-273.15)
 
-    p82 = steamTable.p_hs(h62s,s3)
+    p82 = steamTable.p_hs(h62s,s_pre)
     T82 = steamTable.tsat_p(p82)+273.15
     h82 = steamTable.hL_t(T82-273.15)
 

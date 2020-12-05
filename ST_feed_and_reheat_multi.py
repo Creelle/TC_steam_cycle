@@ -111,7 +111,7 @@ def ST(ST_inputs):
 
     T_exhaust = arg_in.T_exhaust;
     if T_exhaust == -1.:
-        T_exhaust = 150 #°C
+        T_exhaust = 50 #°C
     p4 = arg_in.p4;
     if p4 == -1.:
         p4 = 30 #bar
@@ -142,7 +142,7 @@ def ST(ST_inputs):
         TpinchCond = 5;#delta K
     TpinchHR = arg_in.TpinchHR;
     if TpinchHR ==-1.:
-        TpinchHR = 100;#delta K
+        TpinchHR = 30;#delta K
 
     eta_SiC = arg_in.eta_SiC;
     if eta_SiC == -1.:
@@ -585,7 +585,7 @@ def ST(ST_inputs):
         L_exchanger_soutex = 0
     else :
         L_cond = m_prin*(e6-e7)+sum(m_bleedings)*(e91-e7)+mv*massflow_condenser_coeff*(e_cond_water_in-e_cond_water_out)#vanne included
-        L_exchanger_soutex = m_prin*(e10-e1)+np.dot(m_bleedings,e6i)-sum(m_bleedings)*e91
+        L_exchanger_soutex = mv*(e10-e1)+np.dot(m_bleedings,e6i)-sum(m_bleedings)*e91
     print('L_cond',L_cond)
     print('L_exchanger_soutex',L_exchanger_soutex)
 
@@ -658,7 +658,7 @@ def ST(ST_inputs):
 ST_inputs = ST_arg.ST_inputs();
 ST_inputs.Pe = 35.0e3 #[kW]
 ST_inputs.DISPLAY = 1
-ST_inputs.nsout = 4
+ST_inputs.nsout = 5
 ST_inputs.reheat = 3
 answers = ST(ST_inputs);
 print(answers.HR.T_dew)

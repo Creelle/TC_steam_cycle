@@ -1,32 +1,35 @@
 TO DO LIST
 
-A faire :
+1) A faire en priorité:
 
+- Rajouter drum : choisir ou se trouve les feedheating par rapport au drum : temperature du feed qui est juste au dessus de Tdrum
 
-A faire S12 partie 2 :
-- Feed heating (ROBBE) ==> Retravailler  mais presque bon => ROBBE
-- adapter les travails moteurs , rendements et chaleurs echangées pour plusieurs feed =>(ROBBE)
-- Faire des graphes parametriques : avec le reheating, eta_cyclen en fonction du nombre de reheat (GwWENAEL)
-==>Attention ne pas changer nsout (nsout = 2 , ne pas y toucher) (GWENAEL)
-- caluler T_dew dans boilerpy (is se peut qu il faut modifier boiler_arguments)
-  avec la fonction psychometrics en fontion de la temperature de l atmosphere
-  x = 0.622(psat(T))/(p0-psat(T))
+- Faire des graphes parametriques pour le rapport
 
+2) A faire :
 
+- Faire un README
+- Faire 3 pages de rapport pour gas turbine
+- Faire 3 pages de rapport pour SteamCycle
 
-Idees pour apres :
+3) Idees :
 
-- Rajouter drum : choisir ou se trouve les feedheating par rapport au drum (S12) / y reflechir (GWENAEL)
+- varier le nombre de reheat
+- varier le nombre de nsout
+- un pychart avec reheat / un pychart sans reheat
+- un pychart avec nsout / un pychart sans nsout
+- varier T_exhaust(chimney) changer les conditions meteos pour voir l influence sur le Tdew et du coup tout le cycle
+car T exhaust = Tdew + 100 (Siberie, Congo, Belgique)
 
-- Faire les graphiques du cycle pour la ST (S12)
+4) Dans le rapport :
 
-Autre chose a faire :
-- L_cond
+-Les limites du reheating dans le boiler TpinchHR
+- reheating: le choix des pressions
+- soutirages : le choix des enthalpies
+                hypothese de la pression a H6is = la pression a h6i
+                Le fait que il faut faire en sorte que la temperature en 1 soit plus basse
+                que la temperature de saturation de la pression p10 sinon augmenter la pression à la pompe d extraction
 
-
- A  faire apres :
-- Le rapport + tout mettre en ordre (S13)
-
-Idees :
-- changer les conditions meteos pour voir l influence sur le Tdew et du coup tout le cycle
-car T exhaust = Tdew + 100
+5) Presentation :
+drum 140°C
+trouver l entropie de n importe quel fuel ==> boiler.
