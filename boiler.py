@@ -32,6 +32,12 @@ Pour la temperature dans la chambre de combustion , on nous donne soit Lambda ou
 def boiler(STboiler_input):
     arg_in = STboiler_input
 
+    #Chimneu
+    Tdb = arg_in.Tdb
+    absolute_humidity = arg_in.absolute_humidity
+    T_dew =psychrometrics(Tdb,absolute_humidity)+273.15#K
+    T_exhaust = T_dew + 100#K
+
     #Combustion
     Lambda = arg_in.Lambda
     xO2a=arg_in.x_O2a
@@ -48,7 +54,6 @@ def boiler(STboiler_input):
     #Exchanger
     Q= arg_in.Q #kW
     T_ext =arg_in.T_ext+273.15#K
-    T_exhaust = arg_in.T_exhaust+273.15#K
     TpinchHR = arg_in.TpinchHR
 
     molar_mass_f = 0.018
@@ -138,7 +143,7 @@ def boiler(STboiler_input):
         """
         3) From the massflow, calculate a new T_in
         """
-
+        
         Cp_f = useful.cp_mean_air(useful.cp_air,mass_conc,Mm_af,T_exhaust,T_in+TpinchHR,dt)
         Cp_a = useful.cp_mean_air(useful.cp_air,mass_conc0,Mm_a,T_ext,T_in,dt)
         T_in_new = (massflow_f*Cp_f*T_exhaust-massflow_f*Cp_f*TpinchHR-massflow_a*Cp_a*T_ext)/(massflow_f*Cp_f-massflow_a*Cp_a)
@@ -158,7 +163,7 @@ def boiler(STboiler_input):
     #print("puissance de l \'air entrant",hair_in*massflow_a)
     hair_out =  useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T0,T_exhaust,dt)/1000 #kJ/kg
     # print("puissance de l \'air sortant",hair_out*massflow_f)
-    
+    # print("comparison",Q+hair_out*massflow_f-hair_in*massflow_a,massflow_c*LHV)
     """
     5) Exergie and losses in the boiler
     """

@@ -26,10 +26,12 @@ class boiler_input:
                      HHV = 55695, # [kJ/kg_CH4],
                      LHV =50150,
                      T_ext = 15,#°C
-                     T_exhaust = 150,#°C
+                     # T_exhaust = 150,#°C
                      TpinchHR = 80,#°C
                      x = 0,
                      y =4,
+                     Tdb = 30, # °C
+                     absolute_humidity = 0.01,
                      Q=3361*31):# [kW]
         # combustion
         self.Lambda = Lambda;
@@ -42,11 +44,13 @@ class boiler_input:
         self.LHV = LHV;
         self.x = x
         self.y = y
+        self.Tdb = Tdb
+        self.absolute_humidity = absolute_humidity
 
         #exchanger
         self.Q = Q
         self.T_ext = T_ext
-        self.T_exhaust = T_exhaust
+        # self.T_exhaust = T_exhaust
         self.TpinchHR = TpinchHR
 
 class boiler_output:
@@ -78,6 +82,7 @@ class boiler_output:
                      T_cold_in = 15,#T_atmospherique
                      T_cold_out= 50,# T_a before combustion
                      T_dew = 2,# °C
+                     T_exhaust = 150, # °C
                      P_chimney = 1, #kW
                      L_comb = 1,
                      L_HR =1,
@@ -107,6 +112,7 @@ class boiler_output:
         self.T_cold_in = T_cold_in;
         self.T_cold_out = T_cold_out;
         self.T_dew = T_dew;
+        self.T_exhaust = T_exhaust;
 
         self.P_chimney = P_chimney
         self.L_comb = L_comb
