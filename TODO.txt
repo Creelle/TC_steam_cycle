@@ -4,7 +4,8 @@ TO DO LIST
 
 - Rajouter drum : choisir ou se trouve les feedheating par rapport au drum : temperature du feed qui est juste au dessus de Tdrum
 
-- Faire des graphes parametriques pour le rapport
+- Faire des graphes parametriques pour le rapport :
+
 
 2) A faire :
 
@@ -33,3 +34,5 @@ car T exhaust = Tdew + 100 (Siberie, Congo, Belgique)
 5) Presentation :
 drum 140°C
 trouver l entropie de n importe quel fuel ==> boiler.
+T-s & h-s (both cycles), T-Q (for heat exchangers, includings boilers)
++pychart
