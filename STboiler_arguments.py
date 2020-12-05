@@ -28,6 +28,7 @@ class boiler_input:
                      T_ext = 15,#°C
                      # T_exhaust = 150,#°C
                      TpinchHR = 80,#°C
+                     T_exhaust = 150,#°C
                      x = 0,
                      y =4,
                      Tdb = 30, # °C
@@ -45,6 +46,7 @@ class boiler_input:
         self.x = x
         self.y = y
         self.Tdb = Tdb
+        self.T_exhaust=T_exhaust
         self.absolute_humidity = absolute_humidity
 
         #exchanger
@@ -102,7 +104,6 @@ class boiler_output:
         self.Lambda = Lambda;
         self.T_out = T_out#°C
         self.e_c=e_c;
-        self.eta_combex = eta_combex;
         self.Cp_g = Cp_g;#[kJ/kg/K]
         self.LHV = LHV;
 

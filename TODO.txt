@@ -26,3 +26,7 @@ Autre chose a faire :
 
  A  faire apres :
 - Le rapport + tout mettre en ordre (S13)
+
+Idees :
+- changer les conditions meteos pour voir l influence sur le Tdew et du coup tout le cycle
+car T exhaust = Tdew + 100

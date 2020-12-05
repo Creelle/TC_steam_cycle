@@ -36,7 +36,8 @@ def boiler(STboiler_input):
     Tdb = arg_in.Tdb
     absolute_humidity = arg_in.absolute_humidity
     T_dew =psychrometrics(Tdb,absolute_humidity)+273.15#K
-    T_exhaust = T_dew + 100#K
+
+    T_exhaust = arg_in.T_exhaust+273.15
 
     #Combustion
     Lambda = arg_in.Lambda
@@ -143,7 +144,7 @@ def boiler(STboiler_input):
         """
         3) From the massflow, calculate a new T_in
         """
-        
+
         Cp_f = useful.cp_mean_air(useful.cp_air,mass_conc,Mm_af,T_exhaust,T_in+TpinchHR,dt)
         Cp_a = useful.cp_mean_air(useful.cp_air,mass_conc0,Mm_a,T_ext,T_in,dt)
         T_in_new = (massflow_f*Cp_f*T_exhaust-massflow_f*Cp_f*TpinchHR-massflow_a*Cp_a*T_ext)/(massflow_f*Cp_f-massflow_a*Cp_a)
@@ -219,6 +220,8 @@ def boiler(STboiler_input):
     outputs.T_cold_in = T_ext-273.15 #°C
     outputs.T_cold_out = T_in-273.15#°C
     outputs.T_hot_in = T_hot_in-273.15 #°C
+    outputs.T_dew = T_dew - 273.15 #°C
+    outputs.T_exhaust = T_exhaust-273.15 #°C
 
     outputs.e_c =ec #kJ/kg_c
     outputs.P_chimney = hair_out*massflow_f#kW

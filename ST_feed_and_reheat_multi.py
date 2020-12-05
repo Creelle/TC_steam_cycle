@@ -597,7 +597,6 @@ def ST(ST_inputs):
     L_rotex = L_pump+L_turbine
     L_totex = mc*ec-Pe
 
-
     """
     Last) Define output arguments
     """
@@ -622,7 +621,7 @@ def ST(ST_inputs):
     outputs.HR.T_hot_out = boiler_outputs.T_hot_out
     outputs.HR.T_cold_in = boiler_outputs.T_cold_in
     outputs.HR.T_cold_out = boiler_outputs.T_cold_out
-    outputs.HR.T_dew = boiler_outputs.T_dew #still gave to define
+    outputs.HR.T_dew = boiler_outputs.T_dew
 
     """
     18) Pie charts and cycle graphs
@@ -662,3 +661,4 @@ ST_inputs.DISPLAY = 1
 ST_inputs.nsout = 4
 ST_inputs.reheat = 3
 answers = ST(ST_inputs);
+print(answers.HR.T_dew)
