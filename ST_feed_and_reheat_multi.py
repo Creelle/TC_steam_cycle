@@ -136,7 +136,7 @@ def ST(ST_inputs):
         TpinchSub = 10;#delta K
     TpinchEx = arg_in.TpinchEx;
     if TpinchEx ==-1.:
-        TpinchEx = 15;#delta K
+        TpinchEx = 30;#delta K
     TpinchCond = arg_in.TpinchCond;
     if TpinchCond ==-1.:
         TpinchCond = 5;#delta K
@@ -284,31 +284,35 @@ def ST(ST_inputs):
         h2_prime = steamTable.hL_p(p3)
         s2_prime =steamTable.sL_p(p3)
 
-        nsout = 2
-        T101 = T10+15
+        nsout = 3
 
-        def function_FHW_T81(x):# x = [T81,T82,...,T8n,X]
+        deltah_bleedings = (h_pre-h6)/(nsout+1)
 
-            if nsout ==1:
-                T8i = np.array([x[0]])
-                T101 = x[1]
+        h6i = np.zeros(nsout)
+        for i in range(nsout):
+            h6i[i] = h6+(i+1)*deltah_bleedings
+        h6is = (h6i-h_pre)/eta_SiT+h_pre
 
-            else:
+        p8i = np.zeros(nsout)
+        T8i = np.zeros(nsout)
+        h8i = np.zeros(nsout)
+        for i in range(nsout):
+            p8i[i] = steamTable.p_hs(h6is[i],s3)
+            T8i[i] = steamTable.tsat_p(p8i[i])+273.15
+            h8i[i] = steamTable.hL_t(T8i[i]-273.15)
 
-                T8i = x[0:nsout]
-                Xis = x[nsout:]
-                X2= Xis[0]
 
-            if nsout>=3 :
-                number_add_Xis = nsout-2
-                Xis_add = X2*np.ones(nsout-2)
-                Xis = np.append(X2,Xis_add)
-                for i in range(len(Xis)-1):
-                    Xis[i+1] = Xis[i]/3
+        T10i =T8i-TpinchEx #T102,T103,...,T1
+        p10i = p10*np.ones(nsout)
+        h10i =np.zeros(nsout)
+        for i in range(nsout):
+            h10i[i] = steamTable.h_pt(p10,T10i[i]-273.15)
+        T1,h1 = T10i[-1],h10i[-1]
 
-            # T81=x[0]
-            # T82= x[1]
-            # X2 = x[2]
+        def function_FHW_T81(x):
+
+            T101 = x[0]
+            Xis = x[1:] #X1,X2,X3
 
             """
             This function computes the energy balance at the exchanger condenser and
@@ -317,128 +321,55 @@ def ST(ST_inputs):
             y (T101) estimated temperature between the two exchangers for the cold fluid
             """
 
-            # h81 = steamTable.hL_t(T81-273.15) #kJ/kg_v
-            # p81 = steamTable.psat_t(T81-273.15) #bar
-            # h82 = steamTable.hL_t(T82-273.15) #kJ/kg_v
-            # p82 = steamTable.psat_t(T82-273.15) #bar
-            h8i=np.zeros(len(T8i))
-            p8i=np.zeros(len(T8i))
 
-            #find state 61
-
-            for i in range(len(T8i)):
-                h8i[i] =  steamTable.hL_t(T8i[i]-273.15)
-                p8i[i] = steamTable.psat_t(T8i[i]-273.15)
-
-            p6i = p8i
-            h6si = np.zeros(len(T8i))
-            #find state 61
-            for j in range(len(T8i)):
-                h6si[j]= steamTable.h_ps(p8i[j],s_pre)
-
-            # p61=p81 #isobare
-            # h61s = steamTable.h_ps(p81,s_pre)
-            # h61 = -eta_SiT*(h_pre-h61s)+h_pre
-            #
-            #
-            # #find state 62
-            # p62=p82 #isobare
-            # h62s = steamTable.h_ps(p82,s_pre)
-            # h62 = -eta_SiT*(h_pre-h62s)+h_pre
-
-            h6i = -eta_SiT*(h_pre-h6si)+h_pre
-
-            # T102 = T81-TpinchEx#K
-            # h102=steamTable.h_pt(p10,T102-273.15)
-            #
-            # T1 = T82-TpinchEx#K
-            # h1=steamTable.h_pt(p10,T1-273.15)
-            # print(T1,'first')
-
-            T101=T10+15#K
             h101 = steamTable.h_pt(p10,T101-273.15)
 
-            T10i = T8i-TpinchEx
-            h10i = np.zeros(len(T8i))
-
-            for k in range(len(T8i)):
-                h10i[k] = steamTable.h_pt(p10,T10i[k]-273.15)
-
-            T1,h1 = T10i[-1],h10i[-1]
-
-            T10i,h10i = np.append(T101,T10i),np.append(h101,h10i) # (h101,h102,...h10n,h1) longueur n+1
+            T10ia,h10ia = np.append(T101,T10i),np.append(h101,h10i) # (h101,h102,...h10n,h1) longueur n+1
 
             p81 = p8i[0]
             T9 = T10+TpinchSub #K
             h9 = steamTable.h_pt(p81,T9-273.15)
 
-            #enthalpie ratio #premiere estmation
-            #X1= ((1+X2)*(h1-h10)+X2*(h9-h62))/(h61-h9+h10-h1)
-            #X1 = (X2*(-h62+h1-h101+h81)+h1-h101)/(h61-h1+h101-h81)
 
-            if nsout ==1:
-                X1= (h1-h10)/(h6i[0]-h1+h10-h9)
-            elif nsout ==2:
-                X1 = (X2*(-h6i[1]+h8i[0])+(1+X2)*(h1-h10i[0]))/(h6i[0]-h1+h10i[0]-h8i[0])
-
-            else :
-                sumXi_3_n = sum(Xis[1:])
-                sumXi_2_n = sum(Xis[0:])
-                X1= X2*((-h6i[1]+h8i[0])+(1+sumXi_2_n)*(h10i[2]-h10i[0])-sumXi_3_n*(h8i[2]-h8i[0]))/(h6i[0]-h10i[2]+h10i[0]-h8i[0])
-
-            #"First"
-            #h10 = h101,h102,...hh10n,h1
             if nsout == 1:
                 Fone = X1*(h8i[0]-h9)-(1+X1)*(h101-h10)
-                Flast = X1*(h6i[-1]-h8i[-1])-(1+X1)*(h10i[-1]-h10i[-2])
+                Flast = X1*(h6i[-1]-h8i[-1])-(1+X1)*(h10ia[-1]-h10ia[-2])
                 Functions = np.array([Fone,Flast])
             else:
 
-                Xis = np.append(X1,Xis)
                 sumXi = sum(Xis)
                 Fone = sumXi*(h8i[0]-h9)-(1+sumXi)*(h101-h10)
                 Fa = np.zeros(nsout-1)
                 for i in range(len(Fa)):
                     a = i+1
                     sumXi_aplus_n = sum(Xis[a:])
-                    Fa[i] = sumXi_aplus_n*(h8i[a]-h8i[a-1])+Xis[a-1]*(h6i[a-1]-h8i[a-1])-(1+sumXi)*(h10i[a]-h10i[a-1])# c est chaud pour les notations
-                Flast = Xis[-1]*(h6i[-1]-h8i[-1])-(1+sumXi)*(h10i[-1]-h10i[-2])
-                #print(F1,Fa,Flast)
-                #
-                # F1 = (1+X1+X2)*(h1-h102)-X2*(h62-h82)
-                # F2 = (1+X1+X2)*(h101-h10)-(X1+X2)*(h81-h9)
-                # F3 = (1+X1+X2)*(h102-h101)-X1*(h61-h81)-X2*(h82-h81)
-                #print(F2,F3,F1)
+                    Fa[i] = sumXi_aplus_n*(h8i[a]-h8i[a-1])+Xis[a-1]*(h6i[a-1]-h8i[a-1])-(1+sumXi)*(h10ia[a]-h10ia[a-1])# c est chaud pour les notations
+                Flast = Xis[-1]*(h6i[-1]-h8i[-1])-(1+sumXi)*(h10ia[-1]-h10ia[-2])
                 Functions = np.append(Fone,Fa)
                 Functions = np.append(Functions,Flast)
-                print(Functions)
-
-
-                #print(F2,Fone)
 
             return Functions
 
         #premiere estimation de T81
         def initial(nsout):
-            deltaT = (T2_prime-T7)/(nsout+1)
-            T8i = np.arange(T7+deltaT,T2_prime,deltaT)
-            # T81 = T8i[0]
-            # T82 = T8i[1]
 
-            #X_bleedings = 0.1*np.ones(nsout)
-            if nsout != 1:
-                X2 = 0.1
-                initial = np.append(T8i,0.1)
-            else :
-                initial = T8i
+            T101 = T10+15
+            initial = 0.1*np.ones(nsout)
+            initial = np.append(T101,initial)
             return initial
 
         print(function_FHW_T81(initial(nsout)))
 
 
-        T101 = T10+15
-        T81,T82,X2= fsolve(function_FHW_T81,initial(nsout))
-        print(T81,T82,X2)
+        Solutions= fsolve(function_FHW_T81,initial(nsout))
+        T101 = Solutions[0]
+        X_bleedings = Solutions[1:]
+        print('Solutions',T101,X_bleedings)
+        print(T10i)
+        #To do verifier les Equations
+        #faire des meilleurs guesses pour n >4
+        #modifier le code pour prendre en compte les changements dans les etats
+
 
         """
         7) Alimentation pump

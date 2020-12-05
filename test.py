@@ -284,7 +284,7 @@ def ST(ST_inputs):
         h2_prime = steamTable.hL_p(p3)
         s2_prime =steamTable.sL_p(p3)
 
-        nsout = 3
+        nsout = 5
         #T101 = T10+15
 
         def function_FHW_T81(x):# x = [T81,T82,...,T8n,X]
@@ -347,6 +347,16 @@ def ST(ST_inputs):
             T9 = T10+TpinchSub #K
             h9 = steamTable.h_pt(p81,T9-273.15)
 
+            # if nsout ==1:
+            #     X1= (h1-h10)/(h6i[0]-h1+h10-h9)
+            # elif nsout ==2:
+            #     X1 = (X2*(-h6i[1]+h8i[0])+(1+X2)*(h1-h10i[0]))/(h6i[0]-h1+h10i[0]-h8i[0])
+            #
+            # else :
+            #     sumXi_3_n = sum(Xis[1:])
+            #     sumXi_2_n = sum(Xis[0:])
+            #     X1= X2*((-h6i[1]+h8i[0])+(1+sumXi_2_n)*(h10i[2]-h10i[0])-sumXi_3_n*(h8i[2]-h8i[0]))/(h6i[0]-h10i[2]+h10i[0]-h8i[0])
+            #
 
             if nsout == 1:
                 Fone = X1*(h8i[0]-h9)-(1+X1)*(h101-h10)

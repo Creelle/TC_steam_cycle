@@ -215,7 +215,6 @@ def ST(ST_inputs):
 
     p6=p7
     h6s = steamTable.h_ps(p7,s3)
-    print('s3',s3)
     h62= h3-(h3-h6s)*eta_SiT
     x6=x6
     h6 = x6*steamTable.hV_p(p6)+(1-x6)*steamTable.hL_p(p6)
@@ -234,13 +233,28 @@ def ST(ST_inputs):
     s2_prime =steamTable.sL_p(p3)
 
     #premiere estimation de T81
-    T81 = 0.5*(T7+T2_prime)#K
-    T101 = 0.5*(T10+T7)
+    h61 = (h3-h6)/2+h6
+    h61s = (h61-h3)/eta_SiT+h3
+
+    p81 = steamTable.p_hs(h61s,s3)
+    T81 = steamTable.tsat_p(p81)+273.15
+    h81 = steamTable.hL_t(T81-273.15)
+
+    T1 = T81-TpinchEx
+    p1 = p10
+    h1= steamTable.h_pt(p1,T1-273.15)
+    s1= steamTable.s_pt(p1,T1-273.15)
+    x1 = None
+    v1 = steamTable.v_pt(p1,T1-273.15)
+    e1 = h1-T0*s1#kJ/kg
+    results[:,2]=T1-273.15,p1,h1,s1,x1,e1
+
+    #inconues T101,X1
 
     def function_FHW_T81(x):
 
-        y=x[1]
-        x=x[0]
+        X=x[1]
+        T101=x[0]
         """
         This function computes the energy balance at the exchanger condenser and
         the exchanger subcooler for one feed heating
@@ -248,30 +262,20 @@ def ST(ST_inputs):
         y (T101) estimated temperature between the two exchangers for the cold fluid
         """
 
-        h81 = steamTable.hL_t(x-273.15) #kJ/kg_v
-        p81 = steamTable.psat_t(x-273.15) #bar
-
-        #find state 61
-        p61=p81 #isobare
-        h61s = steamTable.h_ps(p81,s3)
-        h61 = -eta_SiT*(h3-h61s)+h3
-
-        T1 = T81-TpinchEx#K
-        h1=steamTable.h_pt(p10,T1-273.15)
-
-        h101 = steamTable.h_pt(p10,y-273.15)
+        h101 = steamTable.h_pt(p10,T101-273.15)
 
         T91 = T10+TpinchSub #K
         h91 = steamTable.h_pt(p81,T91-273.15)
 
-        #enthalpie ratio
-        X= (h1-h10)/(h61-h1+h10-h91)
         f1 = X*(h61-h81)-(1+X)*(h1-h101)
         f2 = X*(h81-h91)-(1+X)*(h101-h10)
 
         return np.array([f1,f2])
 
-    T81,T101 = fsolve(function_FHW_T81,np.array([T81,T101]))
+    T101 = (T7+T1)/2
+    X1 = 0.1
+    T101,X1 = fsolve(function_FHW_T81,np.array([T101,X1]))
+    print(T101,X1,'here')
 
     """
     5) Alimentation pump

@@ -137,7 +137,7 @@ def ST(ST_inputs):
         TpinchSub = 10;#delta K
     TpinchEx = arg_in.TpinchEx;
     if TpinchEx ==-1.:
-        TpinchEx = 15;#delta K
+        TpinchEx = 20;#delta K
     TpinchCond = arg_in.TpinchCond;
     if TpinchCond ==-1.:
         TpinchCond = 5;#delta K
@@ -323,28 +323,46 @@ def ST(ST_inputs):
     T2_prime = steamTable.tsat_p(p3)+273.15
     h2_prime = steamTable.hL_p(p3)
     s2_prime =steamTable.sL_p(p3)
-    #premiere estimation de T81
-    # T81 = 0.5*(T7+T2_prime)#K
-    # T82 = 0.5*(T81+T2_prime)
-    # X2=0.1
-    T101 = T10+15
 
+    deltah_bleedings = (h_pre-h6)/(nsout+1)
 
-    deltaT = (T2_prime-T7)/(nsout+1)
-    X2=0.1
-    T8i = np.arange(T7+deltaT,T2_prime,deltaT)
-    T81 = T8i[0]
-    T82 = T8i[1]
+    h61 = h6+1*deltah_bleedings
+    h62 = h6+2*deltah_bleedings
 
+    #fuck la regle de Baumann
+    h61s = (h61-h_pre)/eta_SiT+h_pre
+    h62s = (h62-h_pre)/eta_SiT+h_pre
 
+    p81 = steamTable.p_hs(h61s,s3)
+    T81 = steamTable.tsat_p(p81)+273.15
+    h81 = steamTable.hL_t(T81-273.15)
+
+    p82 = steamTable.p_hs(h62s,s3)
+    T82 = steamTable.tsat_p(p82)+273.15
+    h82 = steamTable.hL_t(T82-273.15)
+
+    T1 = T82-TpinchEx
+    p1 = p10
+    h1= steamTable.h_pt(p1,T1-273.15)
+    s1= steamTable.s_pt(p1,T1-273.15)
+    x1 = None
+    v1 = steamTable.v_pt(p1,T1-273.15)
+    e1 = h1-T0*s1#kJ/kg
+
+    T102 = T81-TpinchEx
+    p102 = p10
+    h102= steamTable.h_pt(p102,T102-273.15)
+    s102= steamTable.s_pt(p102,T102-273.15)
+    x102 = None
+    v102 = steamTable.v_pt(p102,T102-273.15)
+    e102 = h102-T0*s102#kJ/kg
+    print(h102,h1)
 
     def function_FHW_T81(x):
 
-
-        #T102=x[3]
+        T101=x[0]
+        X1 = x[1]
         X2 = x[2]
-        T81=x[0]
-        T82= x[1]
         """
         This function computes the energy balance at the exchanger condenser and
         the exchanger subcooler for one feed heating
@@ -352,51 +370,22 @@ def ST(ST_inputs):
         y (T101) estimated temperature between the two exchangers for the cold fluid
         """
 
-        h81 = steamTable.hL_t(T81-273.15) #kJ/kg_v
-        p81 = steamTable.psat_t(T81-273.15) #bar
-
-        h82 = steamTable.hL_t(T82-273.15) #kJ/kg_v
-        p82 = steamTable.psat_t(T82-273.15) #bar
-
-        #find state 61
-        p61=p81 #isobare
-        h61s = steamTable.h_ps(p81,s_pre)
-        h61 = -eta_SiT*(h_pre-h61s)+h_pre
-
-        #find state 62
-        p62=p82 #isobare
-        h62s = steamTable.h_ps(p82,s_pre)
-        h62 = -eta_SiT*(h_pre-h62s)+h_pre
-
-        T102 = T81-TpinchEx#K
-        h102=steamTable.h_pt(p10,T102-273.15)
-
-        T1 = T82-TpinchEx#K
-        h1=steamTable.h_pt(p10,T1-273.15)
-
-        T101=T10+15#K
         h101 = steamTable.h_pt(p10,T101-273.15)
 
         T91 = T10+TpinchSub #K
         h91 = steamTable.h_pt(p81,T91-273.15)
 
-        #enthalpie ratio #premiere estmation
-        X1= ((1+X2)*(h1-h10)+X2*(h91-h62))/(h61-h91+h10-h1)
-
-
-
-
         F1 = (1+X1+X2)*(h1-h102)-X2*(h62-h82)
         F2 = (1+X1+X2)*(h101-h10)-(X1+X2)*(h81-h91)
         F3 = (1+X1+X2)*(h102-h101)-X1*(h61-h81)-X2*(h82-h81)
-
+        
         return np.array([F1,F2,F3])
 
-
-    T81,X2,T82= fsolve(function_FHW_T81,np.array([T81,T82,X2]))
-    T101 = T10+15
-    print(T81,T82,X2)
-
+    T101 = (T102+T7)/2
+    X1 =0.1
+    X2 = 0.1
+    T101,X1,X2= fsolve(function_FHW_T81,np.array([T101,X1,X2]))
+    print(T101,X1,X2)
     """
     5) Alimentation pump
     """
