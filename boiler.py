@@ -158,7 +158,7 @@ def boiler(STboiler_input):
     #print("puissance de l \'air entrant",hair_in*massflow_a)
     hair_out =  useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T0,T_exhaust,dt)/1000 #kJ/kg
     # print("puissance de l \'air sortant",hair_out*massflow_f)
-    # print("comparison",Q+hair_out*massflow_f-hair_in*massflow_a,massflow_c*LHV)
+    
     """
     5) Exergie and losses in the boiler
     """

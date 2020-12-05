@@ -511,6 +511,13 @@ def ST(ST_inputs):
     mv = Pe/(Wm*eta_mec) #kg_v/s
     Q_boiler = mv*Q1 #kW
 
+    try:
+        m_prin = 1/(1+sumXbleedings)*mv
+        m_bleedings = X_bleedings/(1+sumXbleedings)*mv
+    except:
+        m_prin = mv
+        m_bleedings = np.zeros(1)
+
     """
     12) Boiler combustion and heat recovery
     """
@@ -550,15 +557,13 @@ def ST(ST_inputs):
 
     eta_combex = boiler_outputs.eta_combex
     eta_chemex = boiler_outputs.eta_chemex
-    eta_transex =mv*Q_boiler_exergie/(mf*(e_boiler_in-e_boiler_out)) # echange au boiler
+
+    eta_transex = -mv*(e10-e1)/(np.dot(m_bleedings,e6i)-sum(m_bleedings)*e91)#efficiency at the bleed exchangers
 
     eta_gex=mv*Q_boiler_exergie/(mc*ec)
-    # eta_gex2= eta_combex*eta_chemex*eta_transex
-    # print(eta_gex,eta_gex2)
+
     eta_totex = eta_cyclex*eta_gex*eta_mec
-    #eta_totex2 = Pe/(mc*ec)
-    #print(eta_totex,eta_totex2)
-    #print("eta_combex",eta_combex,"eta_chemex",eta_chemex,'eta_transex',eta_transex,"eta_gex",eta_gex,"eta_rotex",eta_rotex,'eta_cyclex',eta_cyclex,"eta_totex",eta_totex,'eta_gen',eta_gen)
+
     eta_condex = 0
 
     """
@@ -571,14 +576,6 @@ def ST(ST_inputs):
     L_exhaust = boiler_outputs.L_exhaust
 
     L_boiler = mv*(-Q_boiler_exergie)+mf*(e_boiler_in-e_boiler_out) #à checekr
-
-
-    try:
-        m_prin = 1/(1+sumXbleedings)*mv
-        m_bleedings = X_bleedings/(1+sumXbleedings)*mv
-    except:
-        m_prin = mv
-        m_bleedings = np.zeros(1)
 
     L_turbine = L_turbine_mv*mv
     L_pump = T0*(s2-s1)*mv+T0*(s10-s7)*mv#kW
@@ -596,7 +593,10 @@ def ST(ST_inputs):
 
     ec = boiler_outputs.e_c
     print('exegie chequ up',ec*mc,Pe+Pf_mec+L_turbine+L_pump+L_boiler+L_cond+L_exhaust+L_HR+L_comb+L_exchanger_soutex)
-    print(L_pump)
+
+    L_rotex = L_pump+L_turbine
+    L_totex = mc*ec-Pe
+
 
     """
     Last) Define output arguments
@@ -604,7 +604,7 @@ def ST(ST_inputs):
     outputs = ST_arg.ST_outputs();
     outputs.eta[0:]= [eta_cyclen,eta_toten,eta_cyclex,eta_totex,eta_gen,eta_gex,eta_combex,eta_chemex,eta_condex,eta_transex]
     outputs.daten[0:]=[P_chimney, Pf_mec, P_cond]
-    outputs.datex[0:]=[Pf_mec,0,0,L_comb,L_cond,L_exhaust,L_exchanger_soutex]
+    outputs.datex[0:]=[Pf_mec,L_totex,L_rotex,L_comb,L_cond,L_exhaust,L_exchanger_soutex]
     outputs.dat= results
     outputs.massflow = boiler_outputs.boiler_massflow #[ma,0,mc,mf]
     outputs.massflow[1] = mv
