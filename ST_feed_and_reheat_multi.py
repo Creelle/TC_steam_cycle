@@ -283,10 +283,10 @@ def ST(ST_inputs):
     """
     if nsout!= 0:
 
-        #trouver l 'etat 2'
-        T2_prime = steamTable.tsat_p(p3)+273.15
-        h2_prime = steamTable.hL_p(p3)
-        s2_prime =steamTable.sL_p(p3)
+        # #trouver l 'etat 2'
+        # T2_prime = steamTable.tsat_p(p3)+273.15
+        # h2_prime = steamTable.hL_p(p3)
+        # s2_prime =steamTable.sL_p(p3)
 
         #calcul de l'etat 6i et 8i
         deltah_bleedings = (h_pre-h6)/(nsout+1)
@@ -651,6 +651,7 @@ def ST(ST_inputs):
     outputs.fig = fig
     if (ST_inputs.DISPLAY == 1):
         plt.show()
+    print(steamTable.tsat_p(5.1))
 
     return outputs;
 
