@@ -22,7 +22,7 @@ class boiler_input:
                      x_N2a = 0.79,# molar fraction
                      T_in = 15,#°C
                      inversion =False,
-                     T_out = 1400, #°Cpour trouver lambda en fonction de T_out mettre true
+                     T_out = 1000, #°Cpour trouver lambda en fonction de T_out mettre true
                      HHV = 55695, # [kJ/kg_CH4],
                      LHV =50150,
                      T_ext = 15,#°C

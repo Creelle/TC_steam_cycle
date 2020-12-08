@@ -243,3 +243,6 @@ def boiler(STboiler_input):
     return outputs
 
 results = boiler(STboiler_arg.boiler_input(inversion=True))
+print(results.Lambda)
+results2 = boiler(STboiler_arg.boiler_input(inversion=False,Lambda = results.Lambda))
+print(results2.T_out)

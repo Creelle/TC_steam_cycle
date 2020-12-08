@@ -111,7 +111,7 @@ def ST(ST_inputs):
 
     T_exhaust = arg_in.T_exhaust;
     if T_exhaust == -1.:
-        T_exhaust = 50 #°C
+        T_exhaust = 80 #°C
     p4 = arg_in.p4;
     if p4 == -1.:
         p4 = 30 #bar
@@ -126,7 +126,7 @@ def ST(ST_inputs):
         T_ext = 15;#15°C
     Tdrum = arg_in.Tdrum;
     if Tdrum ==-1.:
-        Tdrum = 15;#15°C
+        Tdrum = 120;#15°C
 
     #Bon il reste a faire TpinchSub,TpinchEx, TpinchCond,TpinchHR
     # ce sont des differences de temperatures donc on ne change pas
@@ -190,25 +190,19 @@ def ST(ST_inputs):
     """
 
     T7= T_cond_out+TpinchCond
-    p7 = steamTable.psat_t(T7-273.75)
+    p7 = steamTable.psat_t(T7-273.15)
     h7= steamTable.hL_p(p7)
     s7= steamTable.sL_p(p7)
     x7 = 0
     v7 = steamTable.vL_p(p7)
     e7 = h7-T0*s7#kJ/kg
-    results[:,0]=T7-273.75,p7,h7,s7,x7,e7
+    results[:,0]=T7-273.15,p7,h7,s7,x7,e7
 
     """
     2) Extraction pump
     """
 
-    p10=p7*500
-    h10=v7*(p10-p7)*10**2/eta_SiC+h7#kJ/kg
-    T10= steamTable.t_ph(p10,h10)+273.15#K
-    s10 = steamTable.s_ph(p10,h10)
-    x10= None # eau non saturée
-    e10 = h10-T0*s10#kJ/kg
-    results[:,1]=T10-273.105,p10,h10,s10,x10,e10
+
 
     """
     3) Boiler
@@ -220,7 +214,7 @@ def ST(ST_inputs):
     s3=steamTable.s_pt(p3,T3-273.15)
     x3 = None # vapeur surchauffée
     e3 = h3-T0*s3#kJ/kg
-    results[:,4]=T3-273.35,p3,h3,s3,x3,e3
+    results[:,4]=T3-273.15,p3,h3,s3,x3,e3
 
     """
     4) Reheating
@@ -283,10 +277,7 @@ def ST(ST_inputs):
     """
     if nsout!= 0:
 
-        # #trouver l 'etat 2'
-        # T2_prime = steamTable.tsat_p(p3)+273.15
-        # h2_prime = steamTable.hL_p(p3)
-        # s2_prime =steamTable.sL_p(p3)
+
 
         #calcul de l'etat 6i et 8i
         deltah_bleedings = (h_pre-h6)/(nsout+1)
@@ -321,6 +312,19 @@ def ST(ST_inputs):
 
         #calcul de l état 10i
         T10i =T8i-TpinchEx #T102,T103,...,T1
+
+        """
+        Extraction pump
+        """
+        p10=steamTable.psat_t(T10i[-1]-273.15)+1
+
+        h10=v7*(p10-p7)*10**2/eta_SiC+h7#kJ/kg
+        T10= steamTable.t_ph(p10,h10)+273.15#K
+        s10 = steamTable.s_ph(p10,h10)
+        x10= None # eau non saturée
+        e10 = h10-T0*s10#kJ/kg
+        results[:,1]=T10-273.15,p10,h10,s10,x10,e10
+
         p10i = p10*np.ones(nsout)
         h10i =np.zeros(nsout)
         s10i = np.zeros(nsout)
@@ -438,18 +442,27 @@ def ST(ST_inputs):
 
 
         #formater le resultat rappel : results 7,10,1,2,3,[reheat :41,51,...,4last,pre ], 6, 61,62,...,6n, 81,82,...,8n,101,102,...,10n(1),91
-        results[:,6:6+nsout]=T6i-273.15,p6i,h6i,s6i,-1*np.ones(nsout),e6i
+        results[:,6+2*reheat:6+nsout+2*reheat]=T6i-273.15,p6i,h6i,s6i,-1*np.ones(nsout),e6i
 
-        results[:,6+nsout:6+2*nsout]=T8i-273.15,p8i,h8i,s8i,x8i*np.ones(nsout),e8i
+        results[:,6+nsout+2*reheat:6+2*nsout+2*reheat]=T8i-273.15,p8i,h8i,s8i,x8i*np.ones(nsout),e8i
 
-        results[:,6+2*nsout]=T101-273.15,p101,h101,s101,x101,e101
+        results[:,6+2*nsout+2*reheat]=T101-273.15,p101,h101,s101,x101,e101
 
-        results[:,6+2*nsout+1:6+3*nsout+1] =T10i-273.15,p10i,h10i,s10i,-1*np.ones(nsout),e10i
+        results[:,6+2*nsout+1+2*reheat:6+3*nsout+1+2*reheat] =T10i-273.15,p10i,h10i,s10i,-1*np.ones(nsout),e10i
 
-        results[:,6+3*nsout+1]=T91-273.15,p91,h91,s91,x91,e91
+        results[:,6+3*nsout+1+2*reheat]=T91-273.15,p91,h91,s91,x91,e91
 
 
     else:
+        p10 = 5*p7
+        h10=v7*(p10-p7)*10**2/eta_SiC+h7#kJ/kg
+        T10= steamTable.t_ph(p10,h10)+273.15#K
+        s10 = steamTable.s_ph(p10,h10)
+        x10= None # eau non saturée
+        e10 = h10-T0*s10#kJ/kg
+        results[:,1]=T10-273.105,p10,h10,s10,x10,e10
+
+
         Wm_t += (h_pre-h6)
         Wm_tmax += (e_pre-e6)
         L_turbine_mv += T0*(s6-s_pre)
@@ -466,7 +479,7 @@ def ST(ST_inputs):
     7) Alimentation pump
     """
 
-    results[:,2] = T1,p1,h1,s1,x1,e1
+    results[:,2] = T1-273.15,p1,h1,s1,x1,e1
 
     p2=p3_hp#bar
     h2=v1*(p2-p1)*10**2/eta_SiC+h1#kJ/kg
@@ -558,8 +571,11 @@ def ST(ST_inputs):
     eta_combex = boiler_outputs.eta_combex
     eta_chemex = boiler_outputs.eta_chemex
 
-    eta_transex = -mv*(e10-e1)/(np.dot(m_bleedings,e6i)-sum(m_bleedings)*e91)#efficiency at the bleed exchangers
-
+    try:
+        eta_transex = -mv*(e10-e1)/(np.dot(m_bleedings,e6i)-sum(m_bleedings)*e91)#efficiency at the bleed exchangers
+    except:
+        eta_transex=0
+        print('nsout=0')
     eta_gex=mv*Q_boiler_exergie/(mc*ec)
 
     eta_totex = eta_cyclex*eta_gex*eta_mec
@@ -647,11 +663,62 @@ def ST(ST_inputs):
     ax.set_title("Primary exergetic flux "+ str(round(ec*mc/1000)) + "[MW]")
     plt.savefig('figures/exergie_pie.png')
 
+    """
+    19) Cycle graphs
+    """
+
+    #tracer la cloche
+    print("here")
+
+    T= np.linspace(5,373,1000)
+    S_L=np.zeros(len(T))
+    S_V = np.zeros(len(T))
+    for i in range(len(T)):
+        S_L[i]=steamTable.sL_t(T[i])
+        S_V[i]=steamTable.sV_t(T[i])
+
+    T_results = results[0,:]
+    S_results = results[3,:]
+
+    fig3,ax3 = plt.subplots()
+    #trasnfo entre 2 et 3
+    T2_prime = steamTable.tsat_p(p2)
+    S2_prime = steamTable.sL_p(p2)
+    S2_prime_prime = steamTable.sV_p(p2)
+
+    T23 = np.linspace(T2-273.15,T2_prime-1,100)
+    S23 = np.zeros(100)
+    for i in range(len(S23)):
+        S23[i] = steamTable.s_pt(p2,T23[i])
+    ax3.plot(S23,T23,'-b')
+    S23_2 = np.linspace(S2_prime,S2_prime_prime,100)
+    T23_2 = T2_prime*np.ones(100)
+    ax3.plot(S23_2,T23_2,'-b')
+
+    T23_3 = np.linspace(T2_prime+1,T3-273.15,100)
+    S23_3 = np.zeros(100)
+    for i in range(len(S23)):
+        S23_3[i] = steamTable.s_pt(p2,T23_3[i])
+    ax3.plot(S23_3,T23_3,'-b')
+
+    ax3.plot(S_L,T,'-r')
+    ax3.plot(S_V,T,'-r')
+    ax3.scatter(S_results,T_results)
+    ax3.set_xlabel('Entropy [J/kg/K]')
+    ax3.set_ylabel('Tempearature [°C]')
+    ax3.grid(True)
+    ax3.set_title('T S graph of the steam turbine cycle')
+    ax3.legend()
+
+
+
+
+
     fig = [fig,fig2]
     outputs.fig = fig
     if (ST_inputs.DISPLAY == 1):
         plt.show()
-    print(steamTable.tsat_p(5.1))
+
 
     return outputs;
 
@@ -660,6 +727,7 @@ ST_inputs = ST_arg.ST_inputs();
 ST_inputs.Pe = 35.0e3 #[kW]
 ST_inputs.DISPLAY = 1
 ST_inputs.nsout = 5
-ST_inputs.reheat = 3
+ST_inputs.reheat = 2
+ST_inputs.p3_hp=100
+ST_inputs.p4 = 30
 answers = ST(ST_inputs);
-print(answers.HR.T_dew)

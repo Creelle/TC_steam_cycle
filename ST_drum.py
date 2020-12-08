@@ -110,7 +110,7 @@ def ST(ST_inputs):
         T_ext = 15;#15°C
     Tdrum = arg_in.Tdrum;
     if Tdrum ==-1.:
-        Tdrum = 140;#°C
+        Tdrum = 120;#°C
 
     #Bon il reste a faire TpinchSub,TpinchEx, TpinchCond,TpinchHR
     # ce sont des differences de temperatures donc on ne change pas
@@ -240,8 +240,8 @@ def ST(ST_inputs):
     h_pre = results[2][4+2*reheat]
     e_pre = results[5][4+2*reheat]
 
-    Tdrum = 200+273.15
-    p6_IP = p4/10 #first estimation
+    Tdrum = 120+273.15
+    p6_IP = 60 #first estimation
 
     def Function_p6_IP(x):
 
@@ -289,6 +289,7 @@ def ST(ST_inputs):
     x10= None # eau non saturée
     e10 = h10-T0*s10#kJ/kg
     results[:,1]=T10-273.105,p10,h10,s10,x10,e10
+    print('here',p6_IP)
 
     """
     3) Drum pump
@@ -301,7 +302,7 @@ def ST(ST_inputs):
     v71 = steamTable.vL_p(p6_IP)
     x71 = 0
 
-    p11 = 30*p71
+    p11 = p3/3
     print(p3/p7,p10/p7,p11/p71,p3/p11)
     h11=v71*(p11-p71)*10**2/eta_SiC+h71#kJ/kg
     T11= steamTable.t_ph(p11,h11)+273.15#K
@@ -313,14 +314,14 @@ def ST(ST_inputs):
     6) FWH - and drum function
     """
     if nsout!= 0:
-        # if nsout%2 == 0:
-        #     nsout_IP = int(nsout/2)
-        #     nsout = int(nsout/2)
-        # else :
-        #     nsout_IP = int((nsout-1)/2)
-        #     nsout = int(nsout-nsout_IP)
-        # print(nsout,nsout_IP)
-        nsout_IP=0
+        if nsout%2 == 0:
+            nsout_IP = int(nsout/2)
+            nsout = int(nsout/2)
+        else :
+            nsout_IP = int((nsout-1)/2)
+            nsout = int(nsout-nsout_IP)
+        print(nsout,nsout_IP)
+        #nsout_IP=0
         #calcul de l'etat 6i et 8i
         deltah_bleedings = (h6_IP-h6)/(nsout+1)
         deltah_bleedings_IP = (h_pre-h6_IP)/(nsout_IP+1)
@@ -408,9 +409,11 @@ def ST(ST_inputs):
         #calcul du dernier etat du set 1 avant le drum
         T10n,p10n,h10n,s10n,x10n,e10n = T10i[-1],p10i[-1],h10i[-1],s10i[-1],x10i,e10i[-1]
         #calcu de dernier du set 2 (avant la pompe d 'alimentation')
-        # T1,p1,h1,s1,x1,e1 = T10i_IP[-1],p10i_IP[-1],h10i_IP[-1],s10i_IP[-1],x10i_IP,e10i_IP[-1]
-        # v1 = steamTable.vL_p(p1)
-        # print(h6,h6i,h6_IP,h6i_IP)
+        T1,p1,h1,s1,x1,e1 = T10i_IP[-1],p10i_IP[-1],h10i_IP[-1],s10i_IP[-1],x10i_IP,e10i_IP[-1]
+        v1 = steamTable.vL_p(p1)
+        print(h6,h6i,h6_IP,h6i_IP)
+        print(T6_IP,T71,steamTable.tsat_p(p6_IP)+273.15,T10i[-1],T8i_IP[0])
+        print(T8i_IP)
         # p2=p3_hp#bar
         # h2=v1*(p2-p1)*10**2/eta_SiC+h1#kJ/kg
         # T2= steamTable.t_ph(p2,h2)+273.15#K
@@ -421,6 +424,7 @@ def ST(ST_inputs):
             Xis = x[1:nsout] #X1,X2,X3
             Xdrum = 0.1*x[nsout]
             Xis_IP = 0.1*x[nsout+2:]
+            print('here',x)
 
             """
             This function computes the energy balance at the exchanger condenser and
@@ -437,10 +441,10 @@ def ST(ST_inputs):
             h9 = steamTable.h_pt(p81,T9-273.15)
 
             h10ia_IP,T10ia_IP = np.append(h11,h10i_IP),np.append(T11,T10i_IP)
-            print('here',T10, T10ia,T10ia_IP)
-            print(steamTable.tsat_p(p10)+273.15,steamTable.tsat_p(p11)+273.15)
+            # print('here',T10, T10ia,T10ia_IP)
+            # print(steamTable.tsat_p(p10)+273.15,steamTable.tsat_p(p11)+273.15)
             #print(T2,T3)
-
+            print(T8i[0],T9,T10,T101)
             if nsout == 1:
                 X1 = Xis
                 Fone = X1*(h8i[0]-h9)-(1+X1)*(h101-h10)
@@ -468,8 +472,9 @@ def ST(ST_inputs):
                     Fa_IP = np.zeros(nsout_IP-1)
 
                     for i in range(len(Fa_IP)):
-                        sumXi_IP_aplus_n = sum(Xis_IP[a:])
+
                         a = i+1
+                        sumXi_IP_aplus_n = sum(Xis_IP[a:])
                         Fa_IP[i] = Xis_IP[a-1]*(h6i_IP[a-1]-h8i_IP[a-1])+sumXi_IP_aplus_n*(h8i_IP[a]-h8i_IP[a-1])-(1+Xdrum+sumXi+sumXi2)*(h10ia_IP[a]-h10ia_IP[a-1])
                         #Drum
                     Fdrum = Xdrum*(h6_IP)+(1+sumXi)*h10i[-1]+sumXi2*h8i_IP[0]-(1+Xdrum+sumXi+sumXi2)*h71
@@ -779,6 +784,6 @@ def ST(ST_inputs):
 ST_inputs = ST_arg.ST_inputs();
 ST_inputs.Pe = 250.0e3 #[kW]
 ST_inputs.DISPLAY = 1
-ST_inputs.nsout = 4
+ST_inputs.nsout = 6
 ST_inputs.reheat = 1
 answers = ST(ST_inputs);
