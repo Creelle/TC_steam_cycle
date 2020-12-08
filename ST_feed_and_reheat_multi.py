@@ -191,6 +191,7 @@ def ST(ST_inputs):
     """
 
     T7= T_cond_out+TpinchCond
+    print("here",T7)
     p7 = steamTable.psat_t(T7-273.15)
     h7= steamTable.hL_p(p7)
     s7= steamTable.sL_p(p7)
@@ -776,7 +777,7 @@ ST_inputs = ST_arg.ST_inputs();
 ST_inputs.Pe = 35.0e3 #[kW]
 ST_inputs.DISPLAY = 1
 ST_inputs.nsout = 0
-ST_inputs.reheat = 0
+ST_inputs.reheat = 3
 ST_inputs.p3_hp=100
 ST_inputs.p4 = 30
 answers = ST(ST_inputs);
