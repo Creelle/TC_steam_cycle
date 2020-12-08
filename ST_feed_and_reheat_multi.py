@@ -73,6 +73,7 @@ def ST(ST_inputs):
      """
     steamTable = XSteam(XSteam.UNIT_SYSTEM_MKS); # m/kg/sec/°C/bar/W
     arg_in = ST_inputs;
+    fig3,ax3 = plt.subplots()
 
     ## Check input arguments
     # ======================
@@ -224,7 +225,7 @@ def ST(ST_inputs):
     Here we begin the code vectorization because we want to add the number of reheating that we want
     """
     for i in range (0,reheat):
-
+            p_pre = results[1][4+2*i]
             h_pre = results[2][4+2*i]
             s_pre = results[3][4+2*i]
             e_pre = results[5][4+2*i]
@@ -252,10 +253,29 @@ def ST(ST_inputs):
 
             Q1 += (h5i-h4i)
             Q_boiler_exergie += e5i-e4i
+            T4i5i = np.linspace(T4i-273.15,T5i-273.15,100)
+            S4i5i = np.zeros(len(T4i5i))
+            for i in range(0,len(T4i5i)):
+                S4i5i[i] = steamTable.s_pt(p4i,T4i5i[i])
+            ax3.plot(S4i5i,T4i5i,'g')
+
+            ppre4i = np.linspace(p_pre,p4i,100)
+            Sprep = np.linspace(s_pre,s_pre,100)
+            Tpre4i = np.zeros(len(ppre4i))
+            Spre4i = np.zeros(len(ppre4i))
+            hpre4is = np.zeros(len(ppre4i))
+            hpre4i = np.zeros(len(ppre4i))
+            for i in range(0,len(ppre4i)):
+                hpre4is[i] = steamTable.h_ps(ppre4i[i],s_pre)
+                hpre4i[i] = h_pre-(h_pre-hpre4is[i])*eta_SiT
+                Tpre4i[i] = steamTable.t_ph(ppre4i[i],hpre4i[i])
+                Spre4i[i] = steamTable.s_ph(ppre4i[i],hpre4i[i])
+            ax3.plot(Spre4i,Tpre4i,'g',Sprep,Tpre4i,'b--')
 
     """
     5) Turbine : after the reheat
     """
+    p_pre = results[1][4+2*reheat]
     s_pre = results[3][4+2*reheat]
     h_pre = results[2][4+2*reheat]
     e_pre = results[5][4+2*reheat]
@@ -294,6 +314,7 @@ def ST(ST_inputs):
 
         T6i = np.zeros(nsout)
         s6i = np.zeros(nsout)
+        x6i = np.zeros(nsout)
 
 
         for i in range(nsout):
@@ -304,8 +325,27 @@ def ST(ST_inputs):
 
             T6i[i] = steamTable.t_ph(p8i[i],h6i[i])+273.15
             s6i[i] = steamTable.s_ph(p8i[i],h6i[i])
+            x6i[i] = steamTable.x_ph(p8i[i],h6i[i])
+
+            if x6i[i] >= 1:
+                #je calcule les états intermédiaire entre T6i et T6i à saturation
+                T6isat = steamTable.tsat_p(p8i[i])+1
+                S6isat = steamTable.sV_t(T6isat)
+                T6i_6isat = np.linspace(T6i[i]-273.15,T6isat)
+                S6i_6isat = np.zeros(len(T6i_6isat))
+                for j in range(0,len(T6i_6isat)):
+                    S6i_6isat[j] = steamTable.s_pt(p8i[i],T6i_6isat[j])
+                ax3.plot(S6i_6isat,T6i_6isat,'k')
+
+                T6isat_8i = np.linspace(T6isat,T8i[i]-273.15,100)
+                S6isat_8i = np.linspace(S6isat,s8i[i],100)
+                ax3.plot(S6isat_8i,T6isat_8i,'k')
+            if x6i[i] < 1 :
+                T6isat_8i = np.linspace(T6i[i]-273.15,T8i[i]-273.15,100)
+                S6isat_8i = np.linspace(s6i[i],s8i[i],100)
+                ax3.plot(S6isat_8i,T6isat_8i,'k')
+
         p6i = p8i
-        x6i = None
         x8i = 0
         e8i = h8i-T0*s8i
         e6i = h6i - T0*s6i
@@ -442,7 +482,7 @@ def ST(ST_inputs):
 
 
         #formater le resultat rappel : results 7,10,1,2,3,[reheat :41,51,...,4last,pre ], 6, 61,62,...,6n, 81,82,...,8n,101,102,...,10n(1),91
-        results[:,6+2*reheat:6+nsout+2*reheat]=T6i-273.15,p6i,h6i,s6i,-1*np.ones(nsout),e6i
+        results[:,6+2*reheat:6+nsout+2*reheat]=T6i-273.15,p6i,h6i,s6i,x6i,e6i
 
         results[:,6+nsout+2*reheat:6+2*nsout+2*reheat]=T8i-273.15,p8i,h8i,s8i,x8i*np.ones(nsout),e8i
 
@@ -640,7 +680,7 @@ def ST(ST_inputs):
     outputs.HR.T_dew = boiler_outputs.T_dew
 
     """
-    18) Pie charts and cycle graphs
+    18) Pie charts
     """
     # pie chart of the energie flux in the cycle
     fig,ax =  plt.subplots(figsize=(6, 3), subplot_kw=dict(aspect="equal"))
@@ -677,33 +717,42 @@ def ST(ST_inputs):
         S_L[i]=steamTable.sL_t(T[i])
         S_V[i]=steamTable.sV_t(T[i])
 
-    T_results = results[0,:]
-    S_results = results[3,:]
+    T72 = np.linspace(T7-273.15,T2-273.15,100)
+    S72 = np.linspace(s7,s2,100)
 
-    fig3,ax3 = plt.subplots()
-    #trasnfo entre 2 et 3
-    T2_prime = steamTable.tsat_p(p2)
-    S2_prime = steamTable.sL_p(p2)
-    S2_prime_prime = steamTable.sV_p(p2)
+    T2p = steamTable.tsat_p(p2)  ; S2p = steamTable.sL_p(p2) #°C,kJ/kg
+    T2pp =  T2p ; S2pp = steamTable.sV_p(p2)
+    T2p2pp = np.linspace(T2p,T2pp,100)
+    S2p2pp = np.linspace(S2p,S2pp,100)
 
-    T23 = np.linspace(T2-273.15,T2_prime-1,100)
-    S23 = np.zeros(100)
-    for i in range(len(S23)):
-        S23[i] = steamTable.s_pt(p2,T23[i])
-    ax3.plot(S23,T23,'-b')
-    S23_2 = np.linspace(S2_prime,S2_prime_prime,100)
-    T23_2 = T2_prime*np.ones(100)
-    ax3.plot(S23_2,T23_2,'-b')
+    S22p = np.linspace(s2,S2p,100)+1
+    T22p = np.zeros(len(S22p))
+    for i in range(0,len(S22p)):
+        T22p[i] = steamTable.t_ps(p2,S22p[i])
 
-    T23_3 = np.linspace(T2_prime+1,T3-273.15,100)
-    S23_3 = np.zeros(100)
-    for i in range(len(S23)):
-        S23_3[i] = steamTable.s_pt(p2,T23_3[i])
-    ax3.plot(S23_3,T23_3,'-b')
+    T2pp3 = np.linspace(T2pp,T3-273.15,100)+1
+    S2pp3 = np.zeros(len(T2pp3))
+    for i in range(0,len(T2pp3)):
+        S2pp3[i] = steamTable.s_pt(p3,T2pp3[i])
+
+    p36 = np.linspace(p_pre,p6,100)
+    S3p = np.linspace(s_pre,s_pre,100)
+    T36 = np.zeros(len(p36))
+    S36 = np.zeros(len(p36))
+    h36s = np.zeros(len(p36))
+    h36 = np.zeros(len(p36))
+    for i in range(0,len(p36)):
+        h36s[i] = steamTable.h_ps(p36[i],s_pre)
+        h36[i] = h_pre-(h_pre-h36s[i])*eta_SiT
+        T36[i] = steamTable.t_ph(p36[i],h36[i])
+        S36[i] = steamTable.s_ph(p36[i],h36[i])
+
+    T67 = np.linspace(T36[-1],T7-273.15,100)
+    S67 = np.linspace(S36[-1],s7,100)
 
     ax3.plot(S_L,T,'-r')
     ax3.plot(S_V,T,'-r')
-    ax3.scatter(S_results,T_results)
+    ax3.plot(S72,T72,'g',S22p,T22p,'g',S2p2pp,T2p2pp,'g',S2pp3,T2pp3,'g',S36,T36,'g',S3p,T36,'b--',S67,T67,'g')
     ax3.set_xlabel('Entropy [J/kg/K]')
     ax3.set_ylabel('Tempearature [°C]')
     ax3.grid(True)
@@ -726,8 +775,8 @@ def ST(ST_inputs):
 ST_inputs = ST_arg.ST_inputs();
 ST_inputs.Pe = 35.0e3 #[kW]
 ST_inputs.DISPLAY = 1
-ST_inputs.nsout = 5
-ST_inputs.reheat = 2
+ST_inputs.nsout = 0
+ST_inputs.reheat = 0
 ST_inputs.p3_hp=100
 ST_inputs.p4 = 30
 answers = ST(ST_inputs);
