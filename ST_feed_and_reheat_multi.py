@@ -771,6 +771,12 @@ def ST(ST_inputs):
     T67 = np.linspace(T36[-1],T7-273.15,100)
     S67 = np.linspace(S36[-1],s7,100)
 
+    T110 =np.linspace(T10-273.15,T1-273.15,100)
+    S110 = np.zeros(100)
+    for i in range(len(T110)):
+        S110[i]=steamTable.s_pt(p10,T110[i])
+    ax3.plot(S110,T110,'-b')
+
     ax3.plot(S_L,T,'-r')
     ax3.plot(S_V,T,'-r')
     ax3.plot(S72,T72,'g',S22p,T22p,'g',S2p2pp,T2p2pp,'g',S2pp3,T2pp3,'g',S36,T36,'g',S3p,T36,'b--',S67,T67,'g')
@@ -796,8 +802,8 @@ def ST(ST_inputs):
 ST_inputs = ST_arg.ST_inputs();
 ST_inputs.Pe = 35.0e3 #[kW]
 ST_inputs.DISPLAY = 1
-ST_inputs.nsout = 2
-ST_inputs.reheat = 0
+ST_inputs.nsout = 5
+ST_inputs.reheat = 3
 ST_inputs.p3_hp=100
 ST_inputs.p4 = 30
 answers = ST(ST_inputs);
