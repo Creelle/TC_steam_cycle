@@ -456,6 +456,25 @@ def ST(ST_inputs):
         x91 = None
         e91 = h91-T0*s91
 
+        #échange de chaleur isobare entre 8 et 9
+        S89 = np.linspace(s8i[0],s91,100)
+        T89 = np.zeros(len(S89))
+        for i in range(0,len(S89)):
+            T89[i] = steamTable.t_ps(p8i[0],S89[i])
+        ax3.plot(S89,T89,'k')
+
+        Tinter = T7
+        s_inter = steamTable.s_ph(p7,h91)
+        T9inter = np.linspace(T91-273.15,T7-273.15,100)
+        S9inter = np.linspace(s91,s_inter,100)
+
+        ax3.plot(S9inter,T9inter,'k')
+
+        Tinter7 = np.linspace(Tinter-273.15,T7-273.15,100)
+        Sinter7 = np.linspace(s_inter,s7,100)
+        ax3.plot(Sinter7,Tinter7,'*')
+
+
         #state 91_postvanne
         h91_postvanne = h91
         x91_postvanne = steamTable.x_ph(p7,h91)
@@ -726,7 +745,7 @@ def ST(ST_inputs):
     T2p2pp = np.linspace(T2p,T2pp,100)
     S2p2pp = np.linspace(S2p,S2pp,100)
 
-    S22p = np.linspace(s2,S2p,100)+1
+    S22p = np.linspace(s2,S2p,100)
     T22p = np.zeros(len(S22p))
     for i in range(0,len(S22p)):
         T22p[i] = steamTable.t_ps(p2,S22p[i])
@@ -776,8 +795,8 @@ def ST(ST_inputs):
 ST_inputs = ST_arg.ST_inputs();
 ST_inputs.Pe = 35.0e3 #[kW]
 ST_inputs.DISPLAY = 1
-ST_inputs.nsout = 0
-ST_inputs.reheat = 3
+ST_inputs.nsout = 2
+ST_inputs.reheat = 0
 ST_inputs.p3_hp=100
 ST_inputs.p4 = 30
 answers = ST(ST_inputs);
