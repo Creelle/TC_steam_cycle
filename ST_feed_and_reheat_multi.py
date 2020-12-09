@@ -729,7 +729,6 @@ def ST(ST_inputs):
     """
 
     #tracer la cloche
-    print("here")
 
     T= np.linspace(5,373,1000)
     S_L=np.zeros(len(T))
@@ -737,6 +736,8 @@ def ST(ST_inputs):
     for i in range(len(T)):
         S_L[i]=steamTable.sL_t(T[i])
         S_V[i]=steamTable.sV_t(T[i])
+    ax3.plot(S_L,T,'-r')
+    ax3.plot(S_V,T,'-r')
 
     T72 = np.linspace(T7-273.15,T2-273.15,100)
     S72 = np.linspace(s7,s2,100)
@@ -777,9 +778,8 @@ def ST(ST_inputs):
         S110[i]=steamTable.s_pt(p10,T110[i])
     ax3.plot(S110,T110,'-b')
 
-    ax3.plot(S_L,T,'-r')
-    ax3.plot(S_V,T,'-r')
-    ax3.plot(S72,T72,'g',S22p,T22p,'g',S2p2pp,T2p2pp,'g',S2pp3,T2pp3,'g',S36,T36,'g',S3p,T36,'b--',S67,T67,'g')
+
+    ax3.plot(S22p,T22p,'g',S2p2pp,T2p2pp,'g',S2pp3,T2pp3,'g',S36,T36,'g',S3p,T36,'b--',S67,T67,'g')
     ax3.set_xlabel('Entropy [J/kg/K]')
     ax3.set_ylabel('Tempearature [°C]')
     ax3.grid(True)
