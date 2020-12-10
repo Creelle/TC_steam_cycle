@@ -301,8 +301,6 @@ def ST(ST_inputs):
     """
     if nsout!= 0:
 
-
-
         #calcul de l'etat 6i et 8i
         deltah_bleedings = (h_pre-h6)/(nsout+1)
 
@@ -348,6 +346,16 @@ def ST(ST_inputs):
                 T6isat_8i = np.linspace(T6i[i]-273.15,T8i[i]-273.15,100)
                 S6isat_8i = np.linspace(s6i[i],s8i[i],100)
                 ax3.plot(S6isat_8i,T6isat_8i,'k')
+        #vannes
+        for i in range(1,nsout):
+            P88sat = np.linspace(p8i[i],p8i[i-1],100)
+            T88sat = np.zeros(100)
+            S88sat = np.zeros(100)
+            for j in range(len(S88sat)):
+                S88sat[j] = steamTable.s_ph(P88sat[j],h8i[i])
+                T88sat[j] = steamTable.t_ph(P88sat[j],h8i[i])
+
+            ax3.plot(S88sat,T88sat,'--k')
 
         p6i = p8i
         x8i = 0
@@ -508,8 +516,7 @@ def ST(ST_inputs):
 
 
         #formater le resultat rappel : results 7,10,1,2,3,[reheat :41,51,...,4last,pre ], 6, 61,62,...,6n, 81,82,...,8n,101,102,...,10n(1),91
-        print("done")
-        print(T6i-273.15,p6i,h6i,s6i,x6i,e6i)
+
         results[:,6+2*reheat:6+nsout+2*reheat]=T6i-273.15,p6i,h6i,s6i,x6i,e6i
 
         results[:,6+nsout+2*reheat:6+2*nsout+2*reheat]=T8i-273.15,p8i,h8i,s8i,x8i*np.ones(nsout),e8i

@@ -325,6 +325,7 @@ def ST(ST_inputs):
     e71 = h71-T0*s71
     results[:,2] = T71-273.15,p71,h71,s71,x71,e71
 
+
     """
     6) FWH - and drum function
     """
@@ -417,6 +418,17 @@ def ST(ST_inputs):
                 T6isat_8i = np.linspace(T6i[i]-273.15,T8i[i]-273.15,100)
                 S6isat_8i = np.linspace(s6i[i],s8i[i],100)
                 ax3.plot(S6isat_8i,T6isat_8i,'k')
+        #vannes
+        for i in range(1,nsout):
+            P88sat = np.linspace(p8i[i],p8i[i-1],100)
+            T88sat = np.zeros(100)
+            S88sat = np.zeros(100)
+            for j in range(len(S88sat)):
+                S88sat[j] = steamTable.s_ph(P88sat[j],h8i[i])
+                T88sat[j] = steamTable.t_ph(P88sat[j],h8i[i])
+
+            ax3.plot(S88sat,T88sat,'-m')
+
         #graph
         for i in range(nsout_IP):
             if x6i_IP[i] >= 1:
@@ -436,6 +448,16 @@ def ST(ST_inputs):
                 T6isat_8i = np.linspace(T6i_IP[i]-273.15,T8i_IP[i]-273.15,100)
                 S6isat_8i = np.linspace(s6i_IP[i],s8i_IP[i],100)
                 ax3.plot(S6isat_8i,T6isat_8i,'k')
+        #vannes
+        for i in range(1,nsout_IP):
+            P88sat = np.linspace(p8i_IP[i],p8i_IP[i-1],100)
+            T88sat = np.zeros(100)
+            S88sat = np.zeros(100)
+            for j in range(len(S88sat)):
+                S88sat[j] = steamTable.s_ph(P88sat[j],h8i_IP[i])
+                T88sat[j] = steamTable.t_ph(P88sat[j],h8i_IP[i])
+
+            ax3.plot(S88sat,T88sat,'-m')
 
         #calcul de l état 10i
         T10i =T8i-TpinchEx #T102,T103,...,T1
@@ -607,7 +629,7 @@ def ST(ST_inputs):
         S89 = np.zeros(100)
         for i in range(100):
             S89[i] = steamTable.s_pt(p8i[0],T89[i])
-        ax3.plot(S89,T89,'--k')
+        ax3.plot(S89,T89,'--c')
 
         #vanne
         P97 = np.linspace(p7,p91,100)
@@ -617,7 +639,7 @@ def ST(ST_inputs):
             S97[i] = steamTable.s_ph(P97[i],h91)
             T97[i] = steamTable.t_ph(P97[i],h91)
 
-        ax3.plot(S97,T97,'--k')
+        ax3.plot(S97,T97,'--c')
 
 
         #state 91_postvanne
@@ -944,8 +966,35 @@ def ST(ST_inputs):
     S110 = np.zeros(100)
     for i in range(len(T110)):
         S110[i]=steamTable.s_pt(p11,T110[i])
-    ax3.plot(S110,T110,'-b')
+    ax3.plot(S110,T110,'-c')
 
+    #what happens at the drum
+    if x6_IP >= 1:
+        #je calcule les états intermédiaire entre T6i et T6i à saturation
+        T6isat = steamTable.tsat_p(p71)+1
+        S6isat = steamTable.sV_t(T6isat)
+        T6i_6isat = np.linspace(T6_IP-273.15,T6isat)
+        S6i_6isat = np.zeros(len(T6i_6isat))
+        for j in range(0,len(T6i_6isat)):
+            S6i_6isat[j] = steamTable.s_pt(p71,T6i_6isat[j])
+        ax3.plot(S6i_6isat,T6i_6isat,'g')
+
+        T6isat_8i = np.linspace(T6isat,T71-273.15,100)
+        S6isat_8i = np.linspace(S6isat,s71,100)
+        ax3.plot(S6isat_8i,T6isat_8i,'g')
+    if x6_IP< 1 :
+        T6isat_8i = np.linspace(T6_IP-273.15,T71-273.15,100)
+        S6isat_8i = np.linspace(s6_IP,s71,100)
+        ax3.plot(S6isat_8i,T6isat_8i,'g')
+
+    P88sat = np.linspace(p6_IP,p8i_IP[0],100)
+    T88sat = np.zeros(100)
+    S88sat = np.zeros(100)
+    for j in range(len(S88sat)):
+        S88sat[j] = steamTable.s_ph(P88sat[j],h8i_IP[0])
+        T88sat[j] = steamTable.t_ph(P88sat[j],h8i_IP[0])
+
+    ax3.plot(S88sat,T88sat,'-m')
 
 
     #ax3.plot(S22p,T22p,'g',S2p2pp,T2p2pp,'g',S2pp3,T2pp3,'g',S36,T36,'g',S3p,T36,'b--',S67,T67,'g')
