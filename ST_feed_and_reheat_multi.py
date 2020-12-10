@@ -15,8 +15,7 @@ from boiler import boiler
 import matplotlib.pyplot as plt
 from pyXSteam.XSteam import XSteam # see documentation here: https://pypi.org/project/pyXSteam/
 
-# Add your packages here:
-print("test")
+import ST_drum as drum
 
 def psychrometrics(Tdb,absolute_humidity):
     """
@@ -74,6 +73,8 @@ def ST(ST_inputs):
      """
     steamTable = XSteam(XSteam.UNIT_SYSTEM_MKS); # m/kg/sec/°C/bar/W
     arg_in = ST_inputs;
+    if arg_in.drumFlag ==1 :
+        return drum.ST(ST_inputs)
     fig3,ax3 = plt.subplots()
 
     ## Check input arguments
@@ -135,10 +136,10 @@ def ST(ST_inputs):
 
     TpinchSub = arg_in.TpinchSub;
     if TpinchSub ==-1.:
-        TpinchSub = 15;#delta K
+        TpinchSub = 10;#delta K
     TpinchEx = arg_in.TpinchEx;
     if TpinchEx ==-1.:
-        TpinchEx = 15;#delta K
+        TpinchEx = 10;#delta K
     TpinchCond = arg_in.TpinchCond;
     if TpinchCond ==-1.:
         TpinchCond = 5;#delta K
@@ -255,6 +256,7 @@ def ST(ST_inputs):
 
             Q1 += (h5i-h4i)
             Q_boiler_exergie += e5i-e4i
+
             T4i5i = np.linspace(T4i-273.15,T5i-273.15,100)
             S4i5i = np.zeros(len(T4i5i))
             for i in range(0,len(T4i5i)):
@@ -452,28 +454,31 @@ def ST(ST_inputs):
         #state 91
         T91 = T10+TpinchSub #K
         h91 = steamTable.h_pt(p8i[0],T91-273.15)
+
         s91 = steamTable.s_pt(p8i[0],T91-273.15)
         p91 = p8i[0]
         x91 = None
         e91 = h91-T0*s91
 
-        #échange de chaleur isobare entre 8 et 9
-        S89 = np.linspace(s8i[0],s91,100)
-        T89 = np.zeros(len(S89))
-        for i in range(0,len(S89)):
-            T89[i] = steamTable.t_ps(p8i[0],S89[i])
-        ax3.plot(S89,T89,'k')
+        #échange de chaleur isobare entre 8 et 9 + vanne
 
-        Tinter = T7
-        s_inter = steamTable.s_ph(p7,h91)
-        T9inter = np.linspace(T91-273.15,T7-273.15,100)
-        S9inter = np.linspace(s91,s_inter,100)
+        T89 = np.linspace(T91,T8i[0],100)
+        S89 = np.zeros(100)
+        for i in range(100):
+            S89[i] = steamTable.s_pt(p8i[0],T89[i])
+        ax3.plot(S89,T89,'--k')
 
-        ax3.plot(S9inter,T9inter,'k')
+        #vanne
+        P97 = np.linspace(p7,p91,100)
+        T97 = np.zeros(100)
+        S97 = np.zeros(100)
+        for i in range(len(S97)):
+            S97[i] = steamTable.s_ph(P97[i],h91)
+            T97[i] = steamTable.t_ph(P97[i],h91)
 
-        Tinter7 = np.linspace(Tinter-273.15,T7-273.15,100)
-        Sinter7 = np.linspace(s_inter,s7,100)
-        ax3.plot(Sinter7,Tinter7,'*')
+        ax3.plot(S97,T97,'--k')
+
+
 
 
         #state 91_postvanne
@@ -503,6 +508,8 @@ def ST(ST_inputs):
 
 
         #formater le resultat rappel : results 7,10,1,2,3,[reheat :41,51,...,4last,pre ], 6, 61,62,...,6n, 81,82,...,8n,101,102,...,10n(1),91
+        print("done")
+        print(T6i-273.15,p6i,h6i,s6i,x6i,e6i)
         results[:,6+2*reheat:6+nsout+2*reheat]=T6i-273.15,p6i,h6i,s6i,x6i,e6i
 
         results[:,6+nsout+2*reheat:6+2*nsout+2*reheat]=T8i-273.15,p8i,h8i,s8i,x8i*np.ones(nsout),e8i
@@ -552,7 +559,7 @@ def ST(ST_inputs):
 
     Q1 += h3-h2
     Q_boiler_exergie += e3-e2
-
+    print('Q1',Q1)
     """
     9) Condenser
     """
@@ -656,6 +663,7 @@ def ST(ST_inputs):
 
     L_turbine = L_turbine_mv*mv
     L_pump = T0*(s2-s1)*mv+T0*(s10-s7)*mv#kW
+    print(L_pump,'L_pump')
 
     if nsout == 0 :
         L_cond=mv*(e6-e7)+mv*massflow_condenser_coeff*(e_cond_water_in-e_cond_water_out)#vanne included
@@ -772,11 +780,16 @@ def ST(ST_inputs):
     T67 = np.linspace(T36[-1],T7-273.15,100)
     S67 = np.linspace(S36[-1],s7,100)
 
+    ax3.plot([s7,s10],[T7-273.15,T10-273.15])
+
     T110 =np.linspace(T10-273.15,T1-273.15,100)
     S110 = np.zeros(100)
     for i in range(len(T110)):
         S110[i]=steamTable.s_pt(p10,T110[i])
     ax3.plot(S110,T110,'-b')
+    #alimentation pump
+
+    ax3.plot([s1,s2],[T1-273.15,T2-273.15])
 
 
     ax3.plot(S22p,T22p,'g',S2p2pp,T2p2pp,'g',S2pp3,T2pp3,'g',S36,T36,'g',S3p,T36,'b--',S67,T67,'g')
@@ -785,9 +798,6 @@ def ST(ST_inputs):
     ax3.grid(True)
     ax3.set_title('T S graph of the steam turbine cycle')
     ax3.legend()
-
-
-
 
 
     fig = [fig,fig2]
@@ -800,10 +810,12 @@ def ST(ST_inputs):
 
 
 ST_inputs = ST_arg.ST_inputs();
-ST_inputs.Pe = 35.0e3 #[kW]
+ST_inputs.Pe = 250.0e3 #[kW]
 ST_inputs.DISPLAY = 1
-ST_inputs.nsout = 5
+ST_inputs.nsout = 7
 ST_inputs.reheat = 3
 ST_inputs.p3_hp=100
 ST_inputs.p4 = 30
+ST_inputs.drumFlag = 1
 answers = ST(ST_inputs);
+print(answers.Xmassflow)
