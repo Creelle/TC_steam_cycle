@@ -15,7 +15,7 @@ from boiler import boiler
 import matplotlib.pyplot as plt
 from pyXSteam.XSteam import XSteam # see documentation here: https://pypi.org/project/pyXSteam/
 
-import ST_drum as drum
+import ST_drum_test as drum
 
 def psychrometrics(Tdb,absolute_humidity):
     """
@@ -290,6 +290,7 @@ def ST(ST_inputs):
     h62= h_pre-(h_pre-h6s)*eta_SiT
     x6=x6
     h6 = x6*steamTable.hV_p(p6)+(1-x6)*steamTable.hL_p(p6)
+    
     s6 = steamTable.s_ph(p6,h6)
     s62 = x6*steamTable.sV_p(p6)+(1-x6)*steamTable.sL_p(p6)
     T6 = steamTable.t_ph(p6,h6)+273.15#K
@@ -730,7 +731,7 @@ def ST(ST_inputs):
     fig2,ax =  plt.subplots(figsize=(6, 3), subplot_kw=dict(aspect="equal"))
     data = [Pe,Pf_mec,L_turbine+L_pump,L_cond,L_exchanger_soutex,L_boiler,L_HR,L_comb,L_exhaust]
     labels = ['Useful power {v} [MW]'.format(v=round(Pe/1000)),'Mechanical losses {v} [MW]'.format(v=round(Pf_mec/1000)),' \n \n Turbine and \n pump losses {v} [MW]'.format(v=round((L_turbine+L_pump)/1000)),
-              '\n \n Condenser losses {v} [MW]'.format(v=round(L_cond/1000)),'\n \n Bleed heating losses {v} [MW]'.format(v=round(L_exchanger_soutex/1000)),
+              '\n \n \n Condenser losses {v} [MW]'.format(v=round(L_cond/1000)),'\n \n \n \n Bleed heating losses {v} [MW]'.format(v=round(L_exchanger_soutex/1000)),
               'Boiler losses {v} [MW]'.format(v=round(L_boiler/1000)),'Heat recovery losses {v} [MW]'.format(v=round(L_HR/1000)),
               'Combustion losses {v} [MW]'.format(v=round(L_comb/1000)),'Chimney losses {v} [MW]'.format(v=round(L_exhaust/1000))]
     plt.savefig('figures/energie_pie.png')
@@ -753,6 +754,7 @@ def ST(ST_inputs):
         S_V[i]=steamTable.sV_t(T[i])
     ax3.plot(S_L,T,'-r')
     ax3.plot(S_V,T,'-r')
+    ax3.plot([S_L[-1],S_V[-1]],[T[-1],T[-1]],'-r')
 
     T72 = np.linspace(T7-273.15,T2-273.15,100)
     S72 = np.linspace(s7,s2,100)
@@ -823,6 +825,7 @@ ST_inputs.nsout = 7
 ST_inputs.reheat = 3
 ST_inputs.p3_hp=100
 ST_inputs.p4 = 30
-ST_inputs.drumFlag = 1
+ST_inputs.Tdrum = 160
+ST_inputs.drumFlag = 0
 answers = ST(ST_inputs);
 print(answers.Xmassflow)

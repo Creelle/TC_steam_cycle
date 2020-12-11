@@ -171,7 +171,6 @@ def ST(ST_inputs):
     Wm_tmax = 0 #kJ/kg_v
     L_turbine_mv =0 #il faudra faire * mv plus tard
 
-
     """
     1) Initial
     """
@@ -198,12 +197,9 @@ def ST(ST_inputs):
     results[:,6]=T3-273.15,p3,h3,s3,x3,e3
 
     """
-    4) Reheating
+    4) Reheating :Here we begin the code vectorization because we want to add the number of reheating that we want
     """
 
-    """
-    Here we begin the code vectorization because we want to add the number of reheating that we want
-    """
     for i in range (0,reheat):
             p_pre = results[1][6+2*i]
             h_pre = results[2][6+2*i]
@@ -255,42 +251,9 @@ def ST(ST_inputs):
             ax3.plot(Spre4i,Tpre4i,'g',Sprep,Tpre4i,'b--')
 
     """
-    5) Turbine : after the reheat : Intermediate pressure
-    """
-    T_pre = results[0][6+2*reheat]
-    p_pre = results[1][6+2*reheat]
-    s_pre = results[3][6+2*reheat]
-    h_pre = results[2][6+2*reheat]
-    e_pre = results[5][6+2*reheat]
-
-    T6_IP= Tdrum
-    p6_IP = 2 #first estimation
-
-    def Function_p6_IP(x):
-        h6s_IP = steamTable.h_ps(x,s_pre)
-        h6_IP= h_pre-(h_pre-h6s_IP)*eta_SiT
-
-        T6_IP = steamTable.t_ph(x,h6_IP)+273.15
-        return Tdrum-T6_IP
-    p6_IP = fsolve(Function_p6_IP,p6_IP)[0]
-    print('p6_IP',p6_IP)
-    h6s_IP = steamTable.h_ps(p6_IP,s_pre)
-    h6_IP= h_pre-(h_pre-h6s_IP)*eta_SiT
-    s6_IP = steamTable.s_ph(p6_IP,h6_IP)
-    x6_IP = steamTable.x_ph(p6_IP,h6_IP)
-    e6_IP = h6_IP-T0*s6_IP
-
-    #Wm_t +=
-    #Mm_tmax +=
-    #L_turbine_mv +=
-
-    """
-    5.B) Low pressure turbine
+    5) Low pressure turbine
     """
     p6=p7
-    h6s = steamTable.h_ps(p7,s6_IP)
-
-    h62= h_pre-(h6_IP-h6s)*eta_SiT
     x6=x6
     h6 = x6*steamTable.hV_p(p6)+(1-x6)*steamTable.hL_p(p6)
     s6 = steamTable.s_ph(p6,h6)
@@ -298,6 +261,56 @@ def ST(ST_inputs):
     T6 = steamTable.t_ph(p6,h6)+273.15#K
     e6 = h6-T0*s6 #kJ/kg#kJ/kg
     results[:,7+2*reheat]=T6-273.15,p6,h6,s6,x6,e6
+
+    """
+    5) Intermediate pressure turbine : after the reheat :
+    """
+    T_pre = results[0][6+2*reheat]
+    p_pre = results[1][6+2*reheat]
+    s_pre = results[3][6+2*reheat]
+    h_pre = results[2][6+2*reheat]
+    e_pre = results[5][6+2*reheat]
+
+    T6_drum= Tdrum
+    p6_drum = 2 #first estimation
+
+    def Function_p6_drum(x):
+        h6s_drum = steamTable.h_ps(x,s_pre)
+        h6_drum= h_pre-(h_pre-h6s_drum)*eta_SiT
+        T6_drum = steamTable.t_ph(x,h6_drum)+273.15
+        return Tdrum-T6_drum
+
+    p6_drum = fsolve(Function_p6_drum,p6_drum)[0]
+    h6s_drum = steamTable.h_ps(p6_drum,s_pre)
+    h6_drum= h_pre-(h_pre-h6s_drum)*eta_SiT
+
+    #divide the bleedings
+    deltah_bleedings = (h_pre-h6)/(nsout+1)
+
+    h6i = np.zeros(nsout)
+    for i in range(nsout):
+
+        h6i[i] = h6+(i+1)*deltah_bleedings
+
+    arguments6_IP = np.where(h6i>h6_drum)[0][0]
+
+    h6_IP = h6i[arguments6_IP]
+    h6i_IP = h6i[arguments6_IP+1:]
+    h6i = h6i[0:arguments6_IP]
+
+    nsout = len(h6i)
+    nsout_IP = len(h6i_IP)
+
+    #etat 6_IP
+    h6s_IP = h_pre+(-h_pre+h6_IP)/eta_SiT
+    p6_IP = steamTable.p_hs(h6s_IP,s_pre)
+    T6_IP = steamTable.t_ph(p6_IP,h6_IP)+273.15
+    s6_IP = steamTable.s_ph(p6_IP,h6_IP)
+    x6_IP = steamTable.x_ph(p6_IP,h6_IP)
+    e6_IP = h6_IP-T0*s6_IP
+
+    print(T6_drum,T6_IP,'IP')
+
 
     """
     2) Extraction pump
@@ -310,7 +323,6 @@ def ST(ST_inputs):
     x10= None # eau non saturée
     e10 = h10-T0*s10#kJ/kg
     results[:,1]=T10-273.15,p10,h10,s10,x10,e10
-
 
     """
     3) Drum pump
@@ -329,392 +341,352 @@ def ST(ST_inputs):
     """
     6) FWH - and drum function
     """
-    if nsout!= 0:
-        if nsout%2 == 0:
-            nsout_IP = int(nsout/2)
-            nsout = int(nsout/2)
-        else :
-            nsout_IP = int((nsout-1)/2)
-            nsout = int(nsout-nsout_IP)
-        print('nsout,nsout_IP',nsout,nsout_IP)
-        #nsout_IP=0
-        #calcul de l'etat 6i et 8i
-        deltah_bleedings = (h6_IP-h6)/(nsout+1)
-        deltah_bleedings_IP = (h_pre-h6_IP)/(nsout_IP+1)
 
 
-        h6i = np.zeros(nsout)
-        h6i_IP = np.zeros(nsout_IP)
-        for i in range(nsout):
+    h6is = (h6i-h6_IP)/eta_SiT+h6_IP
+    h6is_IP = (h6i_IP-h_pre)/eta_SiT+h_pre
 
-            h6i[i] = h6+(i+1)*deltah_bleedings
-        for i in range(nsout_IP):
-            h6i_IP[i] = h6_IP+(i+1)*deltah_bleedings_IP
-        # h6i_IP = h6i[nsout+2:]
-        # h6_IPbis = h6i[nsout+1]
-        # h6i =h6i[0:nsout]
-        #print(h6_IPbis,h6_IP,"here")
-        #print(h6i_IP,h6_IP,h6i)
+    p8i = np.zeros(nsout)
+    T8i = np.zeros(nsout)
+    h8i = np.zeros(nsout)
+    s8i = np.zeros(nsout)
 
-        h6is = (h6i-h6_IP)/eta_SiT+h6_IP
-        h6is_IP = (h6i_IP-h_pre)/eta_SiT+h_pre
+    p8i_IP = np.zeros(nsout_IP)
+    T8i_IP = np.zeros(nsout_IP)
+    h8i_IP = np.zeros(nsout_IP)
+    s8i_IP = np.zeros(nsout_IP)
 
-        p8i = np.zeros(nsout)
-        T8i = np.zeros(nsout)
-        h8i = np.zeros(nsout)
-        s8i = np.zeros(nsout)
+    T6i = np.zeros(nsout)
+    s6i = np.zeros(nsout)
+    x6i = np.zeros(nsout)
 
-        p8i_IP = np.zeros(nsout_IP)
-        T8i_IP = np.zeros(nsout_IP)
-        h8i_IP = np.zeros(nsout_IP)
-        s8i_IP = np.zeros(nsout_IP)
+    T6i_IP = np.zeros(nsout_IP)
+    s6i_IP = np.zeros(nsout_IP)
+    x6i_IP = np.zeros(nsout_IP)
 
-        T6i = np.zeros(nsout)
-        s6i = np.zeros(nsout)
-        x6i = np.zeros(nsout)
+    for i in range(nsout):
+        p8i[i] = steamTable.p_hs(h6is[i],s6_IP) #its a mistake but okay
+        T8i[i] = steamTable.tsat_p(p8i[i])+273.15
+        h8i[i] = steamTable.hL_t(T8i[i]-273.15)
+        s8i[i] = steamTable.sL_t(T8i[i]-273.15)
 
-        T6i_IP = np.zeros(nsout_IP)
-        s6i_IP = np.zeros(nsout_IP)
-        x6i_IP = np.zeros(nsout_IP)
+        T6i[i] = steamTable.t_ph(p8i[i],h6i[i])+273.15
+        s6i[i] = steamTable.s_ph(p8i[i],h6i[i])
+        x6i[i] = steamTable.x_ph(p8i[i],h6i[i])
+    for i in range(nsout_IP):
+        p8i_IP[i] = steamTable.p_hs(h6is_IP[i],s_pre) #its a mistake but okay
+        T8i_IP[i] = steamTable.tsat_p(p8i_IP[i])+273.15
+        h8i_IP[i] = steamTable.hL_t(T8i_IP[i]-273.15)
+        s8i_IP[i] = steamTable.sL_t(T8i_IP[i]-273.15)
 
-        for i in range(nsout):
-            p8i[i] = steamTable.p_hs(h6is[i],s6_IP) #its a mistake but okay
-            T8i[i] = steamTable.tsat_p(p8i[i])+273.15
-            h8i[i] = steamTable.hL_t(T8i[i]-273.15)
-            s8i[i] = steamTable.sL_t(T8i[i]-273.15)
+        T6i_IP[i] = steamTable.t_ph(p8i_IP[i],h6i_IP[i])+273.15
+        s6i_IP[i] = steamTable.s_ph(p8i_IP[i],h6i_IP[i])
+        x6i_IP[i] = steamTable.x_ph(p8i_IP[i],h6i_IP[i])
 
-            T6i[i] = steamTable.t_ph(p8i[i],h6i[i])+273.15
-            s6i[i] = steamTable.s_ph(p8i[i],h6i[i])
-            x6i[i] = steamTable.x_ph(p8i[i],h6i[i])
-        for i in range(nsout_IP):
-            p8i_IP[i] = steamTable.p_hs(h6is_IP[i],s_pre) #its a mistake but okay
-            T8i_IP[i] = steamTable.tsat_p(p8i_IP[i])+273.15
-            h8i_IP[i] = steamTable.hL_t(T8i_IP[i]-273.15)
-            s8i_IP[i] = steamTable.sL_t(T8i_IP[i]-273.15)
+    p6i = p8i
+    x8i = 0
+    e8i = h8i-T0*s8i
+    e6i = h6i - T0*s6i
 
-            T6i_IP[i] = steamTable.t_ph(p8i_IP[i],h6i_IP[i])+273.15
-            s6i_IP[i] = steamTable.s_ph(p8i_IP[i],h6i_IP[i])
-            x6i_IP[i] = steamTable.x_ph(p8i_IP[i],h6i_IP[i])
+    p6i_IP = p8i_IP
+    x8i_IP = 0
+    e8i_IP = h8i_IP-T0*s8i_IP
+    e6i_IP = h6i_IP - T0*s6i_IP
 
-        p6i = p8i
-        x8i = 0
-        e8i = h8i-T0*s8i
-        e6i = h6i - T0*s6i
+    #graph
+    for i in range(nsout):
+        if x6i[i] >= 1:
+            #je calcule les états intermédiaire entre T6i et T6i à saturation
+            T6isat = steamTable.tsat_p(p8i[i])+1
+            S6isat = steamTable.sV_t(T6isat)
+            T6i_6isat = np.linspace(T6i[i]-273.15,T6isat)
+            S6i_6isat = np.zeros(len(T6i_6isat))
+            for j in range(0,len(T6i_6isat)):
+                S6i_6isat[j] = steamTable.s_pt(p8i[i],T6i_6isat[j])
+            ax3.plot(S6i_6isat,T6i_6isat,'k')
 
-        p6i_IP = p8i_IP
-        x8i_IP = 0
-        e8i_IP = h8i_IP-T0*s8i_IP
-        e6i_IP = h6i_IP - T0*s6i_IP
+            T6isat_8i = np.linspace(T6isat,T8i[i]-273.15,100)
+            S6isat_8i = np.linspace(S6isat,s8i[i],100)
+            ax3.plot(S6isat_8i,T6isat_8i,'k')
+        if x6i[i] < 1 :
+            T6isat_8i = np.linspace(T6i[i]-273.15,T8i[i]-273.15,100)
+            S6isat_8i = np.linspace(s6i[i],s8i[i],100)
+            ax3.plot(S6isat_8i,T6isat_8i,'k')
+    #vannes
+    for i in range(1,nsout):
+        P88sat = np.linspace(p8i[i],p8i[i-1],100)
+        T88sat = np.zeros(100)
+        S88sat = np.zeros(100)
+        for j in range(len(S88sat)):
+            S88sat[j] = steamTable.s_ph(P88sat[j],h8i[i])
+            T88sat[j] = steamTable.t_ph(P88sat[j],h8i[i])
 
-        #graph
-        for i in range(nsout):
-            if x6i[i] >= 1:
-                #je calcule les états intermédiaire entre T6i et T6i à saturation
-                T6isat = steamTable.tsat_p(p8i[i])+1
-                S6isat = steamTable.sV_t(T6isat)
-                T6i_6isat = np.linspace(T6i[i]-273.15,T6isat)
-                S6i_6isat = np.zeros(len(T6i_6isat))
-                for j in range(0,len(T6i_6isat)):
-                    S6i_6isat[j] = steamTable.s_pt(p8i[i],T6i_6isat[j])
-                ax3.plot(S6i_6isat,T6i_6isat,'k')
-
-                T6isat_8i = np.linspace(T6isat,T8i[i]-273.15,100)
-                S6isat_8i = np.linspace(S6isat,s8i[i],100)
-                ax3.plot(S6isat_8i,T6isat_8i,'k')
-            if x6i[i] < 1 :
-                T6isat_8i = np.linspace(T6i[i]-273.15,T8i[i]-273.15,100)
-                S6isat_8i = np.linspace(s6i[i],s8i[i],100)
-                ax3.plot(S6isat_8i,T6isat_8i,'k')
-        #vannes
-        for i in range(1,nsout):
-            P88sat = np.linspace(p8i[i],p8i[i-1],100)
-            T88sat = np.zeros(100)
-            S88sat = np.zeros(100)
-            for j in range(len(S88sat)):
-                S88sat[j] = steamTable.s_ph(P88sat[j],h8i[i])
-                T88sat[j] = steamTable.t_ph(P88sat[j],h8i[i])
-
-            ax3.plot(S88sat,T88sat,'-m')
+        ax3.plot(S88sat,T88sat,'-m')
 
         #graph
-        for i in range(nsout_IP):
-            if x6i_IP[i] >= 1:
-                #je calcule les états intermédiaire entre T6i et T6i à saturation
-                T6isat = steamTable.tsat_p(p8i_IP[i])+1
-                S6isat = steamTable.sV_t(T6isat)
-                T6i_6isat = np.linspace(T6i_IP[i]-273.15,T6isat)
-                S6i_6isat = np.zeros(len(T6i_6isat))
-                for j in range(0,len(T6i_6isat)):
-                    S6i_6isat[j] = steamTable.s_pt(p8i_IP[i],T6i_6isat[j])
-                ax3.plot(S6i_6isat,T6i_6isat,'k')
-
-                T6isat_8i = np.linspace(T6isat,T8i_IP[i]-273.15,100)
-                S6isat_8i = np.linspace(S6isat,s8i_IP[i],100)
-                ax3.plot(S6isat_8i,T6isat_8i,'k')
-            if x6i_IP[i] < 1 :
-                T6isat_8i = np.linspace(T6i_IP[i]-273.15,T8i_IP[i]-273.15,100)
-                S6isat_8i = np.linspace(s6i_IP[i],s8i_IP[i],100)
-                ax3.plot(S6isat_8i,T6isat_8i,'k')
+    for i in range(nsout_IP):
+        if x6i_IP[i] >= 1:
+            #je calcule les états intermédiaire entre T6i et T6i à saturation
+            T6isat = steamTable.tsat_p(p8i_IP[i])+1
+            S6isat = steamTable.sV_t(T6isat)
+            T6i_6isat = np.linspace(T6i_IP[i]-273.15,T6isat)
+            S6i_6isat = np.zeros(len(T6i_6isat))
+            for j in range(0,len(T6i_6isat)):
+                S6i_6isat[j] = steamTable.s_pt(p8i_IP[i],T6i_6isat[j])
+            ax3.plot(S6i_6isat,T6i_6isat,'k')
+            T6isat_8i = np.linspace(T6isat,T8i_IP[i]-273.15,100)
+            S6isat_8i = np.linspace(S6isat,s8i_IP[i],100)
+            ax3.plot(S6isat_8i,T6isat_8i,'k')
+        if x6i_IP[i] < 1 :
+            T6isat_8i = np.linspace(T6i_IP[i]-273.15,T8i_IP[i]-273.15,100)
+            S6isat_8i = np.linspace(s6i_IP[i],s8i_IP[i],100)
+            ax3.plot(S6isat_8i,T6isat_8i,'k')
         #vannes
-        for i in range(1,nsout_IP):
-            P88sat = np.linspace(p8i_IP[i],p8i_IP[i-1],100)
-            T88sat = np.zeros(100)
-            S88sat = np.zeros(100)
-            for j in range(len(S88sat)):
-                S88sat[j] = steamTable.s_ph(P88sat[j],h8i_IP[i])
-                T88sat[j] = steamTable.t_ph(P88sat[j],h8i_IP[i])
+    for i in range(1,nsout_IP):
+        P88sat = np.linspace(p8i_IP[i],p8i_IP[i-1],100)
+        T88sat = np.zeros(100)
+        S88sat = np.zeros(100)
+        for j in range(len(S88sat)):
+            S88sat[j] = steamTable.s_ph(P88sat[j],h8i_IP[i])
+            T88sat[j] = steamTable.t_ph(P88sat[j],h8i_IP[i])
 
-            ax3.plot(S88sat,T88sat,'-m')
+        ax3.plot(S88sat,T88sat,'-m')
 
-        #calcul de l état 10i
-        T10i =T8i-TpinchEx #T102,T103,...,T1
-        p10i = p10*np.ones(nsout)
-        h10i =np.zeros(nsout)
-        s10i = np.zeros(nsout)
-        for i in range(nsout):
-            h10i[i] = steamTable.h_pt(p10,T10i[i]-273.15)
-            s10i[i] = steamTable.s_pt(p10,T10i[i]-273.15)
-        x10i = None
-        e10i = h10i-T0*s10i
+    #calcul de l état 10i
+    T10i =T8i-TpinchEx #T102,T103,...,T1
+    p10i = p10*np.ones(nsout)
+    h10i =np.zeros(nsout)
+    s10i = np.zeros(nsout)
+    for i in range(nsout):
+        h10i[i] = steamTable.h_pt(p10,T10i[i]-273.15)
+        s10i[i] = steamTable.s_pt(p10,T10i[i]-273.15)
+    x10i = None
+    e10i = h10i-T0*s10i
 
-        T10i_IP =T8i_IP-TpinchEx #T102,T103,...,T1
+    T10i_IP =T8i_IP-TpinchEx #T102,T103,...,T1
+
+    """
+    Drum pump
+    """
+    p11 =steamTable.psat_t(T10i_IP[-1]-273.15)+1
+    h11=v71*(p11-p71)*10**2/eta_SiC+h71#kJ/kg
+    T11= steamTable.t_ph(p11,h11)+273.15#K
+    s11 = steamTable.s_ph(p11,h11)
+    x11= None # eau non saturée
+    e11 = h11-T0*s11#kJ/kg
+    results[:,3] = T11-273.15,p11,h11,s11,x11,e11
+
+    p10i_IP = p11*np.ones(nsout_IP)
+    h10i_IP =np.zeros(nsout_IP)
+    s10i_IP = np.zeros(nsout_IP)
+    for i in range(nsout_IP):
+        h10i_IP[i] = steamTable.h_pt(p11,T10i_IP[i]-273.15)
+        s10i_IP[i] = steamTable.s_pt(p11,T10i_IP[i]-273.15)
+    x10i_IP = None
+    e10i_IP = h10i_IP-T0*s10i_IP
+
+
+    #calcul du dernier etat du set 1 avant le drum
+    T10n,p10n,h10n,s10n,x10n,e10n = T10i[-1],p10i[-1],h10i[-1],s10i[-1],x10i,e10i[-1]
+    #calcu de dernier du set 2 (avant la pompe d 'alimentation')
+    T1,p1,h1,s1,x1,e1 = T10i_IP[-1],p10i_IP[-1],h10i_IP[-1],s10i_IP[-1],x10i_IP,e10i_IP[-1]
+    v1 = steamTable.vL_p(p1)
+
+
+    def function_FHW_LP(x):
+
+        T101 = x[0]
+        Xis = x[1:nsout+1] #X1,X2,X3
+
+        Xdrum = x[nsout+1]
+        Xis_IP = x[nsout+2:]
+
 
         """
-        Drum pump
-        """
-        p11 =steamTable.psat_t(T10i_IP[-1]-273.15)+1
-        h11=v71*(p11-p71)*10**2/eta_SiC+h71#kJ/kg
-        T11= steamTable.t_ph(p11,h11)+273.15#K
-        s11 = steamTable.s_ph(p11,h11)
-        x11= None # eau non saturée
-        e11 = h11-T0*s11#kJ/kg
-        results[:,3] = T11-273.15,p11,h11,s11,x11,e11
-
-        p10i_IP = p11*np.ones(nsout_IP)
-        h10i_IP =np.zeros(nsout_IP)
-        s10i_IP = np.zeros(nsout_IP)
-        for i in range(nsout_IP):
-            h10i_IP[i] = steamTable.h_pt(p11,T10i_IP[i]-273.15)
-            s10i_IP[i] = steamTable.s_pt(p11,T10i_IP[i]-273.15)
-        x10i_IP = None
-        e10i_IP = h10i_IP-T0*s10i_IP
-
-
-        #calcul du dernier etat du set 1 avant le drum
-        T10n,p10n,h10n,s10n,x10n,e10n = T10i[-1],p10i[-1],h10i[-1],s10i[-1],x10i,e10i[-1]
-        #calcu de dernier du set 2 (avant la pompe d 'alimentation')
-        T1,p1,h1,s1,x1,e1 = T10i_IP[-1],p10i_IP[-1],h10i_IP[-1],s10i_IP[-1],x10i_IP,e10i_IP[-1]
-        v1 = steamTable.vL_p(p1)
-
-
-        def function_FHW_LP(x):
-
-            T101 = x[0]
-            Xis = x[1:nsout+1] #X1,X2,X3
-
-            Xdrum = x[nsout+1]
-            Xis_IP = x[nsout+2:]
-
-
-            """
-            This function computes the energy balance at the exchanger condenser and
-            the exchanger subcooler for one feed heating
-            INPUTS :  x (T81) estimated temperature at the exit of the condenser
-            y (T101) estimated temperature between the two exchangers for the cold fluid
-            """
-
-            h101 = steamTable.h_pt(p10,T101-273.15)
-            T10ia,h10ia = np.append(T101,T10i),np.append(h101,h10i) # (h101,h102,...h10n,h1) longueur n+1
-
-            p81 = p8i[0]
-            T9 = T10+TpinchSub #K
-            h9 = steamTable.h_pt(p81,T9-273.15)
-
-            h10ia_IP,T10ia_IP = np.append(h11,h10i_IP),np.append(T11,T10i_IP)
-            # print('here',T10, T10ia,T10ia_IP)
-            # print(steamTable.tsat_p(p10)+273.15,steamTable.tsat_p(p11)+273.15)
-            #print(T2,T3)
-            print("evolution",T10-273.15,T101-273.15,T10i-273.15,T71-273.15,T11-273.15,T10i_IP-273.15)
-
-
-            #set1
-            sumXi = sum(Xis)
-            Fone = sumXi*(h8i[0]-h9)-(1+sumXi)*(h101-h10)
-            Fa = np.zeros(nsout-1)
-
-
-            for i in range(len(Fa)):
-                a = i+1
-                sumXi_aplus_n = sum(Xis[a:])
-                Fa[i] = sumXi_aplus_n*(h8i[a]-h8i[a-1])+Xis[a-1]*(h6i[a-1]-h8i[a-1])-(1+sumXi)*(h10ia[a]-h10ia[a-1])# c est chaud pour les notations
-
-            Flast = Xis[-1]*(h6i[-1]-h8i[-1])-(1+sumXi)*(h10i[-1]-h10i[-2])
-
-            #set2
-            if nsout_IP !=0:
-                sumXi2 = sum(Xis_IP)
-                Flast2 = (1+Xdrum+sumXi+sumXi2)*(h10i_IP[-1]-h10i_IP[-2])-Xis_IP[-1]*(h6i_IP[-1]-h8i_IP[-1])
-                Fa_IP = np.zeros(nsout_IP-1)
-
-                for i in range(len(Fa_IP)):
-
-                    a = i+1
-                    sumXi_IP_aplus_n = sum(Xis_IP[a:])
-                    Fa_IP[i] = Xis_IP[a-1]*(h6i_IP[a-1]-h8i_IP[a-1])+sumXi_IP_aplus_n*(h8i_IP[a]-h8i_IP[a-1])-(1+Xdrum+sumXi+sumXi2)*(h10ia_IP[a]-h10ia_IP[a-1])
-                    #Drum
-
-                Fdrum = Xdrum*(h6_IP)+(1+sumXi)*h10i[-1]+sumXi2*h8i_IP[0]-(1+Xdrum+sumXi+sumXi2)*h71
-                # print(h6_IP,h10i[-1],h8i_IP[0],h71,'here')
-                # print(h6,h6i,h6_IP,h6i_IP,h_pre)
-                Functions = np.append(Fone,Fa)
-                Functions = np.append(Functions,Flast)
-                Functions = np.append(Functions,Fa_IP)
-                Functions = np.append(Functions,Flast2)
-                Functions = np.append(Functions,Fdrum)
-
-            else :
-
-                Fdrum =  Xdrum*(h6_IP)+(1+sumXi)*h10i[-1]-(1+Xdrum+sumXi)*h71
-                Functions = np.append(Fone,Fa)
-                Functions = np.append(Functions,Flast)
-                Functions = np.append(Functions,Fdrum)
-                #print(Functions)
-            return Functions
-        print('au drum', "T6_IP",T6_IP-273.15,"T10n",T10i[-1]-273.15,"T8i_IP[0]",T8i_IP[0]-273.15,'T71',T71-273.15)
-        #premiere estimation de T81
-        print('here',steamTable.tsat_p(5.1))
-
-        def initial(nsout,nsout_IP):
-
-            T101 = T10+15
-            initial_set1 = 0.1*np.ones(nsout)
-            Xdrum = 0.1
-            initial_set2 = 0.1*np.ones(nsout_IP)
-            initial = np.append(T101,initial_set1)
-            initial=np.append(initial,Xdrum)
-            initial = np.append(initial,initial_set2)
-            return initial
-        #print('here',function_FHW_LP(initial(2,2)))
-
-
-        Solutions= fsolve(function_FHW_LP,initial(nsout,nsout_IP))
-        T101 = Solutions[0]
-
-        X_bleedings = Solutions[1:]
-        X_bleedings_LP = Solutions[1:nsout+1]
-        Xdrum =Solutions[nsout+1]
-        X_bleedings_IP = Solutions[nsout+2:]
-
-        sum_X_LP = sum(X_bleedings_LP)
-        sum_X_IP = sum(X_bleedings_IP)
-
-        if (X_bleedings[0]<0):
-            print('opposite flow in the subcooler T TpinchSub different from T pinch Ex')
-            print('modify the pressure in the extraction pump p10 or lower TpinchEx or TpinchSub')
-        if(T10i[-1]>steamTable.tsat_p(p10)+273.15):
-            print('vapor formed before the activation pump, increase pressure at alimentation pump p10')
-
-        print('Solutions',T101,X_bleedings,sum(X_bleedings))
-        print(T10i)
-        print(steamTable.tsat_p(p10)+273.15)
-
-        """
-        8) FWH states
+        This function computes the energy balance at the exchanger condenser and
+        the exchanger subcooler for one feed heating
+        INPUTS :  x (T81) estimated temperature at the exit of the condenser
+        y (T101) estimated temperature between the two exchangers for the cold fluid
         """
 
-        #state 91
-        T91 = T10+TpinchSub #K
-        h91 = steamTable.h_pt(p8i[0],T91-273.15)
-        s91 = steamTable.s_pt(p8i[0],T91-273.15)
-        p91 = p8i[0]
-        x91 = None
-        e91 = h91-T0*s91
-
-        #échange de chaleur isobare entre 8 et 9 + vanne
-
-        T89 = np.linspace(T91,T8i[0],100)
-        S89 = np.zeros(100)
-        for i in range(100):
-            S89[i] = steamTable.s_pt(p8i[0],T89[i])
-        ax3.plot(S89,T89,'--c')
-
-        #vanne
-        P97 = np.linspace(p7,p91,100)
-        T97 = np.zeros(100)
-        S97 = np.zeros(100)
-        for i in range(len(S97)):
-            S97[i] = steamTable.s_ph(P97[i],h91)
-            T97[i] = steamTable.t_ph(P97[i],h91)
-
-        ax3.plot(S97,T97,'--c')
-
-
-        #state 91_postvanne
-        h91_postvanne = h91
-        x91_postvanne = steamTable.x_ph(p7,h91)
-
-        #state 101
         h101 = steamTable.h_pt(p10,T101-273.15)
-        s101 = steamTable.s_pt(p10,T101-273.15)
-        p101 = p10
-        x101 = None
-        e101 = h101-T0*s101
+        T10ia,h10ia = np.append(T101,T10i),np.append(h101,h10i) # (h101,h102,...h10n,h1) longueur n+1
 
-        # Condesor :
-        Q2 +=  (sum_X_LP)/(1+sum_X_IP+Xdrum+sum_X_LP)*(h91-h7)
+        p81 = p8i[0]
+        T9 = T10+TpinchSub #K
+        h9 = steamTable.h_pt(p81,T9-273.15)
 
-        #turbine work  :
-        sumXbleedings = sum(X_bleedings)
-        Wm_t += 1/(1+sumXbleedings)*(h6_IP-h6)
-        Wm_t += (1+sum_X_LP+Xdrum)/(1+sumXbleedings)*(h_pre-h6_IP)
-        Wm_tmax += 1/(1+sumXbleedings)*(e6_IP-e6)
-        Wm_tmax += (1+sum_X_LP+Xdrum)/(1+sumXbleedings)*(e_pre-e6)
-        L_turbine_mv += 1/(1+sumXbleedings)*T0*(s6-s6_IP)
-        L_turbine_mv += (1+sum_X_LP+Xdrum)/(1+sumXbleedings)*T0*(s6_IP-s_pre)
-
-        #LP
-        for i in range(nsout):
-            Wm_t += X_bleedings_LP[i]/(1+sumXbleedings)*(h6_IP-h6i[i])
-            Wm_tmax += X_bleedings_LP[i]/(1+sumXbleedings)*(e6_IP-e6i[i])
-            L_turbine_mv += X_bleedings_LP[i]/(1+sumXbleedings)*T0*(s6i[i]-s6_IP)
-        #IP
-        for i in range(nsout_IP):
-            Wm_t += X_bleedings_IP[i]/(1+sumXbleedings)*(h_pre-h6i_IP[i])
-            Wm_tmax += X_bleedings_IP[i]/(1+sumXbleedings)*(e_pre-e6i_IP[i])
-            L_turbine_mv += X_bleedings_IP[i]/(1+sumXbleedings)*T0*(s6i_IP[i]-s_pre)
-
-        print("done",nsout)
-        print(T6i_IP-273.15,p6_IP,h6i_IP,s6i_IP,x6i_IP,e6i_IP)
-        #formater le resultat rappel : results 7,10,71,11,1,2,3,[reheat :41,51,...,4last,pre ], 6, 61,62,...,6n, 81,82,...,8n,101,102,...,10n(1),91
-        results[:,8+2*reheat:8+nsout+2*reheat]=T6i-273.15,p6i,h6i,s6i,x6i,e6i
-        results[:,8+nsout+2*reheat] = T6_IP-273.15,p6_IP,h6_IP,s6_IP,1,e6_IP
-        results[:,8+nsout+2*reheat+1:8+nsout+2*reheat+1+nsout_IP]=T6i_IP-273.15,p6i_IP,h6i_IP,s6i_IP,x6i_IP,e6i_IP
-
-        results[:,8+nsout+2*reheat+1+nsout_IP:8+2*nsout+2*reheat+1+nsout_IP]=T8i-273.15,p8i,h8i,s8i,x8i*np.ones(nsout),e8i
-        results[:,8+2*nsout+2*reheat+1+nsout_IP:8+2*nsout+2*reheat+1+2*nsout_IP]=T8i_IP-273.15,p8i_IP,h8i_IP,s8i_IP,x8i_IP*np.ones(nsout_IP),e8i_IP
-
-        results[:,8+2*nsout+2*reheat+1+2*nsout_IP]=T101-273.15,p101,h101,s101,x101,e101
-
-        results[:,8+2*nsout+2*reheat+2+2*nsout_IP:8+3*nsout+2*reheat+2+2*nsout_IP] =T10i-273.15,p10i,h10i,s10i,np.zeros(nsout),e10i
-        results[:,8+3*nsout+2*reheat+2+2*nsout_IP:8+3*nsout+2*reheat+2+3*nsout_IP] =T10i_IP-273.15,p10i_IP,h10i_IP,s10i_IP,np.zeros(nsout_IP),e10i_IP
-
-        results[:,8+3*nsout+2*reheat+2+3*nsout_IP]=T91-273.15,p91,h91,s91,x91,e91
+        h10ia_IP,T10ia_IP = np.append(h11,h10i_IP),np.append(T11,T10i_IP)
+        # print('here',T10, T10ia,T10ia_IP)
+        # print(steamTable.tsat_p(p10)+273.15,steamTable.tsat_p(p11)+273.15)
+        #print(T2,T3)
+        #print("evolution",T10-273.15,T101-273.15,T10i-273.15,T71-273.15,T11-273.15,T10i_IP-273.15)
 
 
-    else:
-        Wm_t += (h_pre-h6)
-        Wm_tmax += (e_pre-e6)
-        L_turbine_mv += T0*(s6-s_pre)
-        T1,p1,h1,s1,x1,v1,e1 = T10,p10,h10,s10,x10,v7,e10
-        h91 = h7
-        e91 = e7
+        #set1
+        sumXi = sum(Xis)
+        Fone = sumXi*(h8i[0]-h9)-(1+sumXi)*(h101-h10)
+        Fa = np.zeros(nsout-1)
 
-        p11 = 5*p71
-        h11=v71*(p11-p71)*10**2/eta_SiC+h71#kJ/kg
-        T11= steamTable.t_ph(p11,h11)+273.15#K
-        s11 = steamTable.s_ph(p11,h11)
-        x11= None # eau non saturée
-        e11 = h11-T0*s11#kJ/kg
+
+        for i in range(len(Fa)):
+            a = i+1
+            sumXi_aplus_n = sum(Xis[a:])
+            Fa[i] = sumXi_aplus_n*(h8i[a]-h8i[a-1])+Xis[a-1]*(h6i[a-1]-h8i[a-1])-(1+sumXi)*(h10ia[a]-h10ia[a-1])# c est chaud pour les notations
+        Flast = Xis[-1]*(h6i[-1]-h8i[-1])-(1+sumXi)*(h10i[-1]-h10i[-2])
+
+        #set2
+        if nsout_IP !=0:
+            sumXi2 = sum(Xis_IP)
+            Flast2 = (1+Xdrum+sumXi+sumXi2)*(h10i_IP[-1]-h10i_IP[-2])-Xis_IP[-1]*(h6i_IP[-1]-h8i_IP[-1])
+            Fa_IP = np.zeros(nsout_IP-1)
+
+            for i in range(len(Fa_IP)):
+
+                a = i+1
+                sumXi_IP_aplus_n = sum(Xis_IP[a:])
+                Fa_IP[i] = Xis_IP[a-1]*(h6i_IP[a-1]-h8i_IP[a-1])+sumXi_IP_aplus_n*(h8i_IP[a]-h8i_IP[a-1])-(1+Xdrum+sumXi+sumXi2)*(h10ia_IP[a]-h10ia_IP[a-1])
+                #Drum
+
+            Fdrum = Xdrum*(h6_IP)+(1+sumXi)*h10i[-1]+sumXi2*h8i_IP[0]-(1+Xdrum+sumXi+sumXi2)*h71
+            # print(h6_IP,h10i[-1],h8i_IP[0],h71,'here')
+            # print(h6,h6i,h6_IP,h6i_IP,h_pre)
+            Functions = np.append(Fone,Fa)
+            Functions = np.append(Functions,Flast)
+            Functions = np.append(Functions,Fa_IP)
+            Functions = np.append(Functions,Flast2)
+            Functions = np.append(Functions,Fdrum)
+
+        else :
+
+            Fdrum =  Xdrum*(h6_IP)+(1+sumXi)*h10i[-1]-(1+Xdrum+sumXi)*h71
+            Functions = np.append(Fone,Fa)
+            Functions = np.append(Functions,Flast)
+            Functions = np.append(Functions,Fdrum)
+            #print(Functions)
+        return Functions
+    print('au drum', "T6_IP",T6_IP-273.15,"T10n",T10i[-1]-273.15,"T8i_IP[0]",T8i_IP[0]-273.15,'T71',T71-273.15)
+    #premiere estimation de T81
+    print('here',steamTable.tsat_p(5.1))
+
+    def initial(nsout,nsout_IP):
+
+        T101 = T10+15
+        initial_set1 = 0.1*np.ones(nsout)
+        Xdrum = 0.1
+        initial_set2 = 0.1*np.ones(nsout_IP)
+        initial = np.append(T101,initial_set1)
+        initial=np.append(initial,Xdrum)
+        initial = np.append(initial,initial_set2)
+        return initial
+    #print('here',function_FHW_LP(initial(2,2)))
+
+
+    Solutions= fsolve(function_FHW_LP,initial(nsout,nsout_IP))
+    T101 = Solutions[0]
+
+    X_bleedings = Solutions[1:]
+    X_bleedings_LP = Solutions[1:nsout+1]
+    Xdrum =Solutions[nsout+1]
+    X_bleedings_IP = Solutions[nsout+2:]
+
+    sum_X_LP = sum(X_bleedings_LP)
+    sum_X_IP = sum(X_bleedings_IP)
+
+    if (X_bleedings[0]<0):
+        print('opposite flow in the subcooler T TpinchSub different from T pinch Ex')
+        print('modify the pressure in the extraction pump p10 or lower TpinchEx or TpinchSub')
+    if(T10i[-1]>steamTable.tsat_p(p10)+273.15):
+        print('vapor formed before the activation pump, increase pressure at alimentation pump p10')
+
+    print('Solutions',T101,X_bleedings,sum(X_bleedings))
+    print(T10i)
+    print(steamTable.tsat_p(p10)+273.15)
+
+    """
+    8) FWH states
+    """
+
+    #state 91
+    T91 = T10+TpinchSub #K
+    h91 = steamTable.h_pt(p8i[0],T91-273.15)
+    s91 = steamTable.s_pt(p8i[0],T91-273.15)
+    p91 = p8i[0]
+    x91 = None
+    e91 = h91-T0*s91
+
+    #échange de chaleur isobare entre 8 et 9 + vanne
+
+    T89 = np.linspace(T91,T8i[0],100)
+    S89 = np.zeros(100)
+    for i in range(100):
+        S89[i] = steamTable.s_pt(p8i[0],T89[i])
+    ax3.plot(S89,T89,'--c')
+
+    #vanne
+    P97 = np.linspace(p7,p91,100)
+    T97 = np.zeros(100)
+    S97 = np.zeros(100)
+    for i in range(len(S97)):
+        S97[i] = steamTable.s_ph(P97[i],h91)
+        T97[i] = steamTable.t_ph(P97[i],h91)
+
+    ax3.plot(S97,T97,'--c')
+
+
+    #state 91_postvanne
+    h91_postvanne = h91
+    x91_postvanne = steamTable.x_ph(p7,h91)
+
+    #state 101
+    h101 = steamTable.h_pt(p10,T101-273.15)
+    s101 = steamTable.s_pt(p10,T101-273.15)
+    p101 = p10
+    x101 = None
+    e101 = h101-T0*s101
+
+    # Condesor :
+    Q2 +=  (sum_X_LP)/(1+sum_X_IP+Xdrum+sum_X_LP)*(h91-h7)
+
+    #turbine work  :
+    sumXbleedings = sum(X_bleedings)
+    Wm_t += 1/(1+sumXbleedings)*(h6_IP-h6)
+    Wm_t += (1+sum_X_LP+Xdrum)/(1+sumXbleedings)*(h_pre-h6_IP)
+    Wm_tmax += 1/(1+sumXbleedings)*(e6_IP-e6)
+    Wm_tmax += (1+sum_X_LP+Xdrum)/(1+sumXbleedings)*(e_pre-e6)
+    L_turbine_mv += 1/(1+sumXbleedings)*T0*(s6-s6_IP)
+    L_turbine_mv += (1+sum_X_LP+Xdrum)/(1+sumXbleedings)*T0*(s6_IP-s_pre)
+
+    #LP
+    for i in range(nsout):
+        Wm_t += X_bleedings_LP[i]/(1+sumXbleedings)*(h6_IP-h6i[i])
+        Wm_tmax += X_bleedings_LP[i]/(1+sumXbleedings)*(e6_IP-e6i[i])
+        L_turbine_mv += X_bleedings_LP[i]/(1+sumXbleedings)*T0*(s6i[i]-s6_IP)
+    #IP
+    for i in range(nsout_IP):
+        Wm_t += X_bleedings_IP[i]/(1+sumXbleedings)*(h_pre-h6i_IP[i])
+        Wm_tmax += X_bleedings_IP[i]/(1+sumXbleedings)*(e_pre-e6i_IP[i])
+        L_turbine_mv += X_bleedings_IP[i]/(1+sumXbleedings)*T0*(s6i_IP[i]-s_pre)
+
+    print("done",nsout)
+
+    #formater le resultat rappel : results 7,10,71,11,1,2,3,[reheat :41,51,...,4last,pre ], 6, 61,62,...,6n, 81,82,...,8n,101,102,...,10n(1),91
+    results[:,8+2*reheat:8+nsout+2*reheat]=T6i-273.15,p6i,h6i,s6i,x6i,e6i
+    results[:,8+nsout+2*reheat] = T6_IP-273.15,p6_IP,h6_IP,s6_IP,1,e6_IP
+    results[:,8+nsout+2*reheat+1:8+nsout+2*reheat+1+nsout_IP]=T6i_IP-273.15,p6i_IP,h6i_IP,s6i_IP,x6i_IP,e6i_IP
+
+    results[:,8+nsout+2*reheat+1+nsout_IP:8+2*nsout+2*reheat+1+nsout_IP]=T8i-273.15,p8i,h8i,s8i,x8i*np.ones(nsout),e8i
+    results[:,8+2*nsout+2*reheat+1+nsout_IP:8+2*nsout+2*reheat+1+2*nsout_IP]=T8i_IP-273.15,p8i_IP,h8i_IP,s8i_IP,x8i_IP*np.ones(nsout_IP),e8i_IP
+
+    results[:,8+2*nsout+2*reheat+1+2*nsout_IP]=T101-273.15,p101,h101,s101,x101,e101
+
+    results[:,8+2*nsout+2*reheat+2+2*nsout_IP:8+3*nsout+2*reheat+2+2*nsout_IP] =T10i-273.15,p10i,h10i,s10i,np.zeros(nsout),e10i
+    results[:,8+3*nsout+2*reheat+2+2*nsout_IP:8+3*nsout+2*reheat+2+3*nsout_IP] =T10i_IP-273.15,p10i_IP,h10i_IP,s10i_IP,np.zeros(nsout_IP),e10i_IP
+
+    results[:,8+3*nsout+2*reheat+2+3*nsout_IP]=T91-273.15,p91,h91,s91,x91,e91
+
+
+
 
     LP_flowratio = 1+sum_X_LP
     flowratio = 1+sum_X_LP+sum_X_IP+Xdrum
@@ -915,6 +887,7 @@ def ST(ST_inputs):
         S_V[i]=steamTable.sV_t(T[i])
     ax3.plot(S_L,T,'-r')
     ax3.plot(S_V,T,'-r')
+    ax3.plot([S_L[-1],S_V[-1]],[T[-1],T[-1]],'-r')
 
 
 

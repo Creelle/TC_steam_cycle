@@ -1,7 +1,7 @@
 import numpy as np
 import ST_arguments as ST_arg
 import STboiler_arguments as STboiler_arg
-import useful
+import ST_useful as useful
 from thermochem import janaf
 db = janaf.Janafdb();
 
@@ -242,7 +242,7 @@ def boiler(STboiler_input):
 
     return outputs
 
-results = boiler(STboiler_arg.boiler_input(inversion=True))
-print(results.Lambda)
-results2 = boiler(STboiler_arg.boiler_input(inversion=False,Lambda = results.Lambda))
-print(results2.T_out)
+# results = boiler(STboiler_arg.boiler_input(inversion=True))
+# print(results.Lambda)
+# results2 = boiler(STboiler_arg.boiler_input(inversion=False,Lambda = results.Lambda))
+# print(results2.T_out)
