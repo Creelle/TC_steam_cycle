@@ -1,22 +1,17 @@
 TO DO LIST
 
-1) A faire en priorité:
-
-- Rajouter drum : choisir ou se trouve les feedheating par rapport au drum : temperature du feed qui est juste au dessus de Tdrum
-
-- Faire des graphes parametriques pour le rapport :
-
-
 2) A faire :
 
-- Faire un README
-- Faire 3 pages de rapport pour gas turbine
-- Faire 3 pages de rapport pour SteamCycle
+- Faire un README ==> ROBBE
+- tester dans la correction ==> ROBBE
+- Faire 4 pages de rapport
+- eta_condex  ==> ROBBE
+- commentez le code ==> DIMANCHE
 
-3) Idees :
+3) Idees  (pour les graphes):
 
 - varier le nombre de reheat
-- varier le nombre de nsout
+- varier le nombre de nsout (sans reheat)
 - un pychart avec reheat / un pychart sans reheat
 - un pychart avec nsout / un pychart sans nsout
 - varier T_exhaust(chimney) changer les conditions meteos pour voir l influence sur le Tdew et du coup tout le cycle
@@ -24,15 +19,31 @@ car T exhaust = Tdew + 100 (Siberie, Congo, Belgique)
 
 4) Dans le rapport :
 
--Les limites du reheating dans le boiler TpinchHR
-- reheating: le choix des pressions
-- soutirages : le choix des enthalpies
-                hypothese de la pression a H6is = la pression a h6i
-                Le fait que il faut faire en sorte que la temperature en 1 soit plus basse
-                que la temperature de saturation de la pression p10 sinon augmenter la pression à la pompe d extraction
+SteamTurbine:
 
-5) Presentation :
-drum 140°C
-trouver l entropie de n importe quel fuel ==> boiler.
-T-s & h-s (both cycles), T-Q (for heat exchangers, includings boilers)
-+pychart
+- montrer les graphes de cyle qu on a fait a chaque point des points ci -dessous
+
+- Les limites du heat recovery dans le boiler TpinchHR
+- reheating: le choix des pressions vs eta_cyclen ==> GWENAEL
+- soutirages avec drum voir l influence de drum 1 vs drum 2 ==> ROBBE
+- augmenter la pression au PE pour montrer que le plus optimal c est la pression de saturation  ==> ROBBE
+
+- faire le graphe du Tpinch ==>GWENAEL
+
+- regarder ce qui ce passe avec les deltapinchEx diverse influence ==> ROBBE
+- si jamais ca foire pour un feed heat, il faut diminuer le deltaTpinchEx et deltaTpinchSub ==>ROBBE
+
+- x et y differents que se passe t'il? ==> GWENAEL
+
+- Que se passe-t'il dans le drum ? ==> GWENAEL
+
+Gas turbine :
+parler de l echnage de chaleur a la sortie ==> comment on a fait notre echangeur ==> ROBBE
+Montrer les graphe qu on a fait ==> GWENAEL
+
+
+
+
+6) Remarques:
+- pas de pertes de charge  dans le boiler
+-CH4 dans le boiler

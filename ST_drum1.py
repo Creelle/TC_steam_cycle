@@ -610,6 +610,7 @@ def ST(ST_inputs):
     #state 91
     T91 = T10+TpinchSub #K
     h91 = steamTable.h_pt(p8i[0],T91-273.15)
+
     s91 = steamTable.s_pt(p8i[0],T91-273.15)
     p91 = p8i[0]
     x91 = None
@@ -617,10 +618,12 @@ def ST(ST_inputs):
 
     #échange de chaleur isobare entre 8 et 9 + vanne
 
-    T89 = np.linspace(T91,T8i[0],100)
+    T89 = np.linspace(T91-273.15,T8i[0]-273.1,100)
     S89 = np.zeros(100)
     for i in range(100):
+
         S89[i] = steamTable.s_pt(p8i[0],T89[i])
+        
     ax3.plot(S89,T89,'--c')
 
     #vanne
@@ -640,6 +643,7 @@ def ST(ST_inputs):
 
     #state 101
     h101 = steamTable.h_pt(p10,T101-273.15)
+
     s101 = steamTable.s_pt(p10,T101-273.15)
     p101 = p10
     x101 = None
@@ -984,7 +988,7 @@ def ST(ST_inputs):
     ax3.set_title('T S graph of the steam turbine cycle')
     ax3.legend()
 
-    fig = [fig,fig2]
+    fig = [fig,fig2,fig3]
     outputs.fig = fig
     if (ST_inputs.DISPLAY == 1):
         plt.show()

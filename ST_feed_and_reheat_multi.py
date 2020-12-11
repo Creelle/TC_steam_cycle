@@ -15,7 +15,7 @@ from boiler import boiler
 import matplotlib.pyplot as plt
 from pyXSteam.XSteam import XSteam # see documentation here: https://pypi.org/project/pyXSteam/
 
-import ST_drum_test as drum
+import ST_drum1 as drum
 
 def psychrometrics(Tdb,absolute_humidity):
     """
@@ -73,6 +73,7 @@ def ST(ST_inputs):
      """
     steamTable = XSteam(XSteam.UNIT_SYSTEM_MKS); # m/kg/sec/°C/bar/W
     arg_in = ST_inputs;
+
     if arg_in.drumFlag ==1 :
         return drum.ST(ST_inputs)
     fig3,ax3 = plt.subplots()
@@ -136,10 +137,10 @@ def ST(ST_inputs):
 
     TpinchSub = arg_in.TpinchSub;
     if TpinchSub ==-1.:
-        TpinchSub = 10;#delta K
+        TpinchSub = 5;#delta K
     TpinchEx = arg_in.TpinchEx;
     if TpinchEx ==-1.:
-        TpinchEx = 10;#delta K
+        TpinchEx = 5;#delta K
     TpinchCond = arg_in.TpinchCond;
     if TpinchCond ==-1.:
         TpinchCond = 5;#delta K
@@ -290,7 +291,7 @@ def ST(ST_inputs):
     h62= h_pre-(h_pre-h6s)*eta_SiT
     x6=x6
     h6 = x6*steamTable.hV_p(p6)+(1-x6)*steamTable.hL_p(p6)
-    
+
     s6 = steamTable.s_ph(p6,h6)
     s62 = x6*steamTable.sV_p(p6)+(1-x6)*steamTable.sL_p(p6)
     T6 = steamTable.t_ph(p6,h6)+273.15#K
@@ -452,7 +453,7 @@ def ST(ST_inputs):
         if(T10i[-1]>steamTable.tsat_p(p10)+273.15):
             print('vapor formed before the activation pump, increase pressure at alimentation pump p10')
 
-        # print('Solutions',T101,X_bleedings,sum(X_bleedings))
+        print('Solutions',T101,X_bleedings,sum(X_bleedings))
         # print(T10i)
         # print(steamTable.tsat_p(p10)+273.15)
 
@@ -471,11 +472,11 @@ def ST(ST_inputs):
 
         #échange de chaleur isobare entre 8 et 9 + vanne
 
-        T89 = np.linspace(T91,T8i[0],100)
+        T89 = np.linspace(T91-273.15,T8i[0]-273.15,100)
         S89 = np.zeros(100)
         for i in range(100):
             S89[i] = steamTable.s_pt(p8i[0],T89[i])
-        ax3.plot(S89,T89,'--k')
+        ax3.plot(S89,T89,'--c')
 
         #vanne
         P97 = np.linspace(p7,p91,100)
@@ -485,7 +486,7 @@ def ST(ST_inputs):
             S97[i] = steamTable.s_ph(P97[i],h91)
             T97[i] = steamTable.t_ph(P97[i],h91)
 
-        ax3.plot(S97,T97,'--k')
+        ax3.plot(S97,T97,'--c')
 
 
 
@@ -710,11 +711,11 @@ def ST(ST_inputs):
     outputs.combustion.fum =np.array([boiler_outputs.m_O2f,boiler_outputs.m_N2f,boiler_outputs.m_CO2f,boiler_outputs.m_H2Of])*mf
 
     #heat recovery
-    outputs.HR.T_hot_in = boiler_outputs.T_hot_in
-    outputs.HR.T_hot_out = boiler_outputs.T_hot_out
-    outputs.HR.T_cold_in = boiler_outputs.T_cold_in
-    outputs.HR.T_cold_out = boiler_outputs.T_cold_out
-    outputs.HR.T_dew = boiler_outputs.T_dew
+    # outputs.HR.T_hot_in = boiler_outputs.T_hot_in
+    # outputs.HR.T_hot_out = boiler_outputs.T_hot_out
+    # outputs.HR.T_cold_in = boiler_outputs.T_cold_in
+    # outputs.HR.T_cold_out = boiler_outputs.T_cold_out
+    # outputs.HR.T_dew = boiler_outputs.T_dew
 
     """
     18) Pie charts
@@ -809,7 +810,7 @@ def ST(ST_inputs):
     ax3.legend()
 
 
-    fig = [fig,fig2]
+    fig = [fig,fig2,fig3]
     outputs.fig = fig
     if (ST_inputs.DISPLAY == 1):
         plt.show()
@@ -821,11 +822,15 @@ def ST(ST_inputs):
 ST_inputs = ST_arg.ST_inputs();
 ST_inputs.Pe = 250.0e3 #[kW]
 ST_inputs.DISPLAY = 1
-ST_inputs.nsout = 7
+ST_inputs.nsout = 5
 ST_inputs.reheat = 3
+ST_inputs.TpinchEx = 15
+ST_inputs.TpinchSub = 15
 ST_inputs.p3_hp=100
 ST_inputs.p4 = 30
-ST_inputs.Tdrum = 160
-ST_inputs.drumFlag = 0
+ST_inputs.Tdrum = 140
+ST_inputs.drumFlag = 1
 answers = ST(ST_inputs);
 print(answers.Xmassflow)
+print(answers.massflow[2])
+print(answers.combustion.fum)
