@@ -1,12 +1,3 @@
-## Project LMECA2150-Thermal cycle
-#Template for the Steam turbine
-#
-# Author: Paolo Thiran & Gauthier Limpens
-# Version: 2020
-#
-# Students can modify this script.
-# However, the arguments for the ST defined in ST_arguments.py CANNOT be modified
-
 import numpy as np;
 from scipy.optimize import fsolve
 import ST_arguments as ST_arg;
@@ -14,8 +5,10 @@ import STboiler_arguments as STboiler_arg;
 from boiler import boiler
 import matplotlib.pyplot as plt
 from pyXSteam.XSteam import XSteam # see documentation here: https://pypi.org/project/pyXSteam/
+plt.rcParams.update({'font.size': 16})
 
-import ST_drum1 as drum
+
+import ST_drum2 as drum
 
 def psychrometrics(Tdb,absolute_humidity):
     """
@@ -115,7 +108,7 @@ def ST(ST_inputs):
 
     T_exhaust = arg_in.T_exhaust;
     if T_exhaust == -1.:
-        T_exhaust = 80 #°C
+        T_exhaust = 120 #°C
     p4 = arg_in.p4;
     if p4 == -1.:
         p4 = 30 #bar
@@ -275,7 +268,7 @@ def ST(ST_inputs):
                 hpre4i[i] = h_pre-(h_pre-hpre4is[i])*eta_SiT
                 Tpre4i[i] = steamTable.t_ph(ppre4i[i],hpre4i[i])
                 Spre4i[i] = steamTable.s_ph(ppre4i[i],hpre4i[i])
-            ax3.plot(Spre4i,Tpre4i,'g',Sprep,Tpre4i,'b--')
+            ax3.plot(Spre4i,Tpre4i,'g')#,Sprep,Tpre4i,'b--')
 
     """
     5) Turbine : after the reheat
@@ -586,6 +579,7 @@ def ST(ST_inputs):
     e_cond_water_in = h_cond_water_in-T0*s_cond_water_in
     e_cond_water_out = h_cond_water_out-T0*s_cond_water_out
 
+
     """
     10) Mechanical work:
     """
@@ -657,7 +651,7 @@ def ST(ST_inputs):
 
     eta_totex = eta_cyclex*eta_gex*eta_mec
 
-    eta_condex = 0
+    eta_condex = (e_cond_water_in-e_cond_water_out)*massflow_condenser_coeff/(e7-e6)
 
     """
     16) Computation of exergy losses
@@ -802,7 +796,7 @@ def ST(ST_inputs):
     ax3.plot([s1,s2],[T1-273.15,T2-273.15])
 
 
-    ax3.plot(S22p,T22p,'g',S2p2pp,T2p2pp,'g',S2pp3,T2pp3,'g',S36,T36,'g',S3p,T36,'b--',S67,T67,'g')
+    ax3.plot(S22p,T22p,'g',S2p2pp,T2p2pp,'g',S2pp3,T2pp3,'g',S36,T36,'g',S67,T67,'g')
     ax3.set_xlabel('Entropy [J/kg/K]')
     ax3.set_ylabel('Tempearature [°C]')
     ax3.grid(True)
@@ -822,14 +816,16 @@ def ST(ST_inputs):
 ST_inputs = ST_arg.ST_inputs();
 ST_inputs.Pe = 250.0e3 #[kW]
 ST_inputs.DISPLAY = 1
-ST_inputs.nsout = 5
+ST_inputs.nsout = 8
 ST_inputs.reheat = 3
-ST_inputs.TpinchEx = 15
-ST_inputs.TpinchSub = 15
+ST_inputs.TpinchEx = 5
+ST_inputs.TpinchSub = 10
 ST_inputs.p3_hp=100
 ST_inputs.p4 = 30
-ST_inputs.Tdrum = 140
-ST_inputs.drumFlag = 1
+ST_inputs.Tdrum = 120
+ST_inputs.drumFlag = 0
+ST_inputs.T_exhaust= 120
+ST_inputs.TpinchHR = 80
 answers = ST(ST_inputs);
 print(answers.Xmassflow)
 print(answers.massflow[2])

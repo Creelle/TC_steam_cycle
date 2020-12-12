@@ -14,6 +14,7 @@ import STboiler_arguments as STboiler_arg;
 from boiler import boiler
 import matplotlib.pyplot as plt
 from pyXSteam.XSteam import XSteam # see documentation here: https://pypi.org/project/pyXSteam
+plt.rcParams.update({'font.size': 16})
 
 
 def ST(ST_inputs):
@@ -96,7 +97,7 @@ def ST(ST_inputs):
 
     T_exhaust = arg_in.T_exhaust;
     if T_exhaust == -1.:
-        T_exhaust = 150 #°C
+        T_exhaust = 60 #°C
     if p3_hp == -1.:
         p3_hp =100#bar
     p4 = arg_in.p4;
@@ -129,7 +130,7 @@ def ST(ST_inputs):
         TpinchCond = 5;#delta K
     TpinchHR = arg_in.TpinchHR;
     if TpinchHR ==-1.:
-        TpinchHR = 100;#delta K
+        TpinchHR = 50;#delta K
 
     eta_SiC = arg_in.eta_SiC;
     if eta_SiC == -1.:
@@ -248,7 +249,7 @@ def ST(ST_inputs):
                 hpre4i[i] = h_pre-(h_pre-hpre4is[i])*eta_SiT
                 Tpre4i[i] = steamTable.t_ph(ppre4i[i],hpre4i[i])
                 Spre4i[i] = steamTable.s_ph(ppre4i[i],hpre4i[i])
-            ax3.plot(Spre4i,Tpre4i,'g',Sprep,Tpre4i,'b--')
+            ax3.plot(Spre4i,Tpre4i,'g')#,Sprep,Tpre4i,'b--')
 
     """
     5) Low pressure turbine
@@ -623,8 +624,8 @@ def ST(ST_inputs):
     for i in range(100):
 
         S89[i] = steamTable.s_pt(p8i[0],T89[i])
-        
-    ax3.plot(S89,T89,'--c')
+
+    #ax3.plot(S89,T89,'--c')
 
     #vanne
     P97 = np.linspace(p7,p91,100)
@@ -634,7 +635,7 @@ def ST(ST_inputs):
         S97[i] = steamTable.s_ph(P97[i],h91)
         T97[i] = steamTable.t_ph(P97[i],h91)
 
-    ax3.plot(S97,T97,'--c')
+    ax3.plot(S97,T97,'-m')
 
 
     #state 91_postvanne
@@ -792,7 +793,7 @@ def ST(ST_inputs):
     #eta_totex2 = Pe/(mc*ec)
     #print(eta_totex,eta_totex2)
     #print("eta_combex",eta_combex,"eta_chemex",eta_chemex,'eta_transex',eta_transex,"eta_gex",eta_gex,"eta_rotex",eta_rotex,'eta_cyclex',eta_cyclex,"eta_totex",eta_totex,'eta_gen',eta_gen)
-    eta_condex = 0
+    eta_condex = (e_cond_water_in-e_cond_water_out)*massflow_condenser_coeff/(e7-e6)
 
     """
     16) Computation of exergy losses
@@ -867,8 +868,8 @@ def ST(ST_inputs):
     # pie chart of the exergie flux in the cycle
     fig2,ax =  plt.subplots(figsize=(6, 3), subplot_kw=dict(aspect="equal"))
     data = [Pe,Pf_mec,L_turbine+L_pump,L_cond,L_exchanger_soutex,L_boiler,L_HR,L_comb,L_exhaust]
-    labels = ['Useful power {v} [MW]'.format(v=round(Pe/1000)),'Mechanical losses {v} [MW]'.format(v=round(Pf_mec/1000)),' \n \n Turbine and \n pump losses {v} [MW]'.format(v=round((L_turbine+L_pump)/1000)),
-              '\n \n \n Condenser losses {v} [MW]'.format(v=round(L_cond/1000)),'\n \n \n \n Bleed heating losses {v} [MW]'.format(v=round(L_exchanger_soutex/1000)),
+    labels = ['Useful power {v} [MW]'.format(v=round(Pe/1000)),'Mechanical losses {v} [MW]'.format(v=round(Pf_mec/1000)),' \n \n Turbine and pump losses {v} [MW]'.format(v=round((L_turbine+L_pump)/1000)),
+              '\n \n \n Condenser losses {v} [MW]'.format(v=round(L_cond/1000)),'\n \n \n \n Feed heating losses {v} [MW]'.format(v=round(L_exchanger_soutex/1000)),
               'Boiler losses {v} [MW]'.format(v=round(L_boiler/1000)),'Heat recovery losses {v} [MW]'.format(v=round(L_HR/1000)),
               'Combustion losses {v} [MW]'.format(v=round(L_comb/1000)),'Chimney losses {v} [MW]'.format(v=round(L_exhaust/1000))]
     plt.savefig('figures/energie_pie.png')
@@ -924,7 +925,7 @@ def ST(ST_inputs):
         h36[i] = h_pre-(h_pre-h36s[i])*eta_SiT
         T36[i] = steamTable.t_ph(p36[i],h36[i])
         S36[i] = steamTable.s_ph(p36[i],h36[i])
-    ax3.plot(S36,T36,'g',S3p,T36,'b--')
+    ax3.plot(S36,T36,'g')#,S3p,T36,'b--')
 
     T67 = np.linspace(T36[-1],T7-273.15,100)
     S67 = np.linspace(S36[-1],s7,100)
@@ -961,15 +962,15 @@ def ST(ST_inputs):
         S6i_6isat = np.zeros(len(T6i_6isat))
         for j in range(0,len(T6i_6isat)):
             S6i_6isat[j] = steamTable.s_pt(p71,T6i_6isat[j])
-        ax3.plot(S6i_6isat,T6i_6isat,'g')
+        ax3.plot(S6i_6isat,T6i_6isat,'tab:orange',label="Drum")
 
         T6isat_8i = np.linspace(T6isat,T71-273.15,100)
         S6isat_8i = np.linspace(S6isat,s71,100)
-        ax3.plot(S6isat_8i,T6isat_8i,'g')
+        ax3.plot(S6isat_8i,T6isat_8i,'tab:orange')
     if x6_IP< 1 :
         T6isat_8i = np.linspace(T6_IP-273.15,T71-273.15,100)
         S6isat_8i = np.linspace(s6_IP,s71,100)
-        ax3.plot(S6isat_8i,T6isat_8i,'g')
+        ax3.plot(S6isat_8i,T6isat_8i,'tab:orange',label="Drum")
 
     P88sat = np.linspace(p6_IP,p8i_IP[0],100)
     T88sat = np.zeros(100)

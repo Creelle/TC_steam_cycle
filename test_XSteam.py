@@ -25,3 +25,4 @@ print(steamTable.hV_t(100)-steamTable.hL_t(100))
 print(steamTable.CpL_t(15),steamTable.CvL_t(15),steamTable.CpL_t(25))
 #les inputs et outputs de XSteam sont en °C
 # ...
+print(steamTable.psat_t(20))

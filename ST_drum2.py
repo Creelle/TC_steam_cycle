@@ -14,6 +14,7 @@ import STboiler_arguments as STboiler_arg;
 from boiler import boiler
 import matplotlib.pyplot as plt
 from pyXSteam.XSteam import XSteam # see documentation here: https://pypi.org/project/pyXSteam
+plt.rcParams.update({'font.size': 16})
 
 
 def ST(ST_inputs):
@@ -252,7 +253,7 @@ def ST(ST_inputs):
                 hpre4i[i] = h_pre-(h_pre-hpre4is[i])*eta_SiT
                 Tpre4i[i] = steamTable.t_ph(ppre4i[i],hpre4i[i])
                 Spre4i[i] = steamTable.s_ph(ppre4i[i],hpre4i[i])
-            ax3.plot(Spre4i,Tpre4i,'g',Sprep,Tpre4i,'b--')
+            ax3.plot(Spre4i,Tpre4i,'g')#,Sprep,Tpre4i,'b--')
 
     """
     5) Turbine : after the reheat : Intermediate pressure
@@ -636,7 +637,7 @@ def ST(ST_inputs):
         S89 = np.zeros(100)
         for i in range(100):
             S89[i] = steamTable.s_pt(p8i[0],T89[i])
-        ax3.plot(S89,T89,'--c')
+        ax3.plot(S89,T89,'-m')
 
         #vanne
         P97 = np.linspace(p7,p91,100)
@@ -646,7 +647,7 @@ def ST(ST_inputs):
             S97[i] = steamTable.s_ph(P97[i],h91)
             T97[i] = steamTable.t_ph(P97[i],h91)
 
-        ax3.plot(S97,T97,'--c')
+        ax3.plot(S97,T97,'-m')
 
 
         #state 91_postvanne
@@ -816,7 +817,7 @@ def ST(ST_inputs):
     #eta_totex2 = Pe/(mc*ec)
     #print(eta_totex,eta_totex2)
     #print("eta_combex",eta_combex,"eta_chemex",eta_chemex,'eta_transex',eta_transex,"eta_gex",eta_gex,"eta_rotex",eta_rotex,'eta_cyclex',eta_cyclex,"eta_totex",eta_totex,'eta_gen',eta_gen)
-    eta_condex = 0
+    eta_condex = (e_cond_water_in-e_cond_water_out)*massflow_condenser_coeff/(e7-e6)
 
     """
     16) Computation of exergy losses
@@ -915,6 +916,7 @@ def ST(ST_inputs):
         S_V[i]=steamTable.sV_t(T[i])
     ax3.plot(S_L,T,'-r')
     ax3.plot(S_V,T,'-r')
+    ax3.plot([S_L[-1],S_V[-1]],[T[-1],T[-1]],'-r')
 
 
 
@@ -947,7 +949,7 @@ def ST(ST_inputs):
         h36[i] = h_pre-(h_pre-h36s[i])*eta_SiT
         T36[i] = steamTable.t_ph(p36[i],h36[i])
         S36[i] = steamTable.s_ph(p36[i],h36[i])
-    ax3.plot(S36,T36,'g',S3p,T36,'b--')
+    ax3.plot(S36,T36,'g')#,S3p,T36,'b--')
 
     T67 = np.linspace(T36[-1],T7-273.15,100)
     S67 = np.linspace(S36[-1],s7,100)
@@ -984,15 +986,15 @@ def ST(ST_inputs):
         S6i_6isat = np.zeros(len(T6i_6isat))
         for j in range(0,len(T6i_6isat)):
             S6i_6isat[j] = steamTable.s_pt(p71,T6i_6isat[j])
-        ax3.plot(S6i_6isat,T6i_6isat,'g')
+        ax3.plot(S6i_6isat,T6i_6isat,'tab:orange',label='Drum')
 
         T6isat_8i = np.linspace(T6isat,T71-273.15,100)
         S6isat_8i = np.linspace(S6isat,s71,100)
-        ax3.plot(S6isat_8i,T6isat_8i,'g')
+        ax3.plot(S6isat_8i,T6isat_8i,'tab:orange')
     if x6_IP< 1 :
         T6isat_8i = np.linspace(T6_IP-273.15,T71-273.15,100)
         S6isat_8i = np.linspace(s6_IP,s71,100)
-        ax3.plot(S6isat_8i,T6isat_8i,'g')
+        ax3.plot(S6isat_8i,T6isat_8i,'tab:orange',label='Drum')
 
     P88sat = np.linspace(p6_IP,p8i_IP[0],100)
     T88sat = np.zeros(100)
