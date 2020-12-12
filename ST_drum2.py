@@ -14,7 +14,7 @@ import STboiler_arguments as STboiler_arg;
 from boiler import boiler
 import matplotlib.pyplot as plt
 from pyXSteam.XSteam import XSteam # see documentation here: https://pypi.org/project/pyXSteam
-plt.rcParams.update({'font.size': 16})
+plt.rcParams.update({'font.size': 20})
 
 
 def ST(ST_inputs):
@@ -1007,10 +1007,10 @@ def ST(ST_inputs):
 
 
     #ax3.plot(S22p,T22p,'g',S2p2pp,T2p2pp,'g',S2pp3,T2pp3,'g',S36,T36,'g',S3p,T36,'b--',S67,T67,'g')
-    ax3.set_xlabel('Entropy [J/kg/K]')
-    ax3.set_ylabel('Tempearature [°C]')
+    ax3.set_xlabel('Entropy [kJ/kg/K]')
+    ax3.set_ylabel('Temperature [°C]')
     ax3.grid(True)
-    ax3.set_title('T S graph of the steam turbine cycle')
+    #ax3.set_title('T S graph of the steam turbine cycle')
     ax3.legend()
 
     fig = [fig,fig2]
