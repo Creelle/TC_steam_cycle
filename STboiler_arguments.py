@@ -27,12 +27,13 @@ class boiler_input:
                      LHV =50150,
                      T_ext = 15,#°C
                      # T_exhaust = 150,#°C
-                     TpinchHR = 30,#°C
-                     T_exhaust = 50,#°C
+                     TpinchHR = 100,#°C
+                     T_boiler_cold = 30,
+                     T_exhaust = 100,
                      x = 0,
                      y =4,
-                     Tdb = 30, # °C
-                     absolute_humidity = 0.01,
+                     Tdb = 20, # °C
+                     absolute_humidity = 0.005,
                      Q=3361*31):# [kW]
         # combustion
         self.Lambda = Lambda;
@@ -54,6 +55,7 @@ class boiler_input:
         self.T_ext = T_ext
         # self.T_exhaust = T_exhaust
         self.TpinchHR = TpinchHR
+        self.T_boiler_cold = T_boiler_cold
 
 class boiler_output:
     """

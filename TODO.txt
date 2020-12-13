@@ -3,9 +3,9 @@ TO DO LIST
 2) A faire :
 
 - Faire un README ==> ROBBE
-- tester dans la correction ==> ROBBE
+- tester dans la correction ==> ROBBE ==> OK
 - Faire 4 pages de rapport
-- eta_condex  ==> ROBBE
+- eta_condex  ==> ROBBE ==> OK
 - commentez le code ==> DIMANCHE
 
 3) Idees  (pour les graphes):

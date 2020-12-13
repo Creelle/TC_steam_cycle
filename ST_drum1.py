@@ -69,10 +69,10 @@ def ST(ST_inputs):
         Pe = 250e3;#250 kWe
     nsout = arg_in.nsout;
     if nsout ==-1.:
-        nsout = 4;#15°C
+        nsout = 6;#15°C
     reheat = arg_in.reheat
     if reheat == -1:
-        reheat = 0;# Number of reheating
+        reheat = 3;# Number of reheating
     T_max = arg_in.T_max;
     if T_max == -1.:
         T_max = 520 #°C
@@ -86,9 +86,17 @@ def ST(ST_inputs):
         eta_mec = 0.95 #[-]
 
     comb = arg_in.combustion
+    if comb.Tmax ==-1.:
+        if comb.Lambda ==-1 :
 
-    inversion = True  # on doit calculer Lambda a partir de Tmax
-    comb.Tmax = 273.15+1400;
+            inversion = True
+            comb.Tmax = 273.15+1400;
+            print("hello")
+        else :
+            inversion = False
+
+    elif comb.Lambda == -1.:
+        inversion =True # on doit calculer Lambda a partir de Tmax
 
     if comb.x == -1:
         comb.x = 0;
@@ -97,7 +105,7 @@ def ST(ST_inputs):
 
     T_exhaust = arg_in.T_exhaust;
     if T_exhaust == -1.:
-        T_exhaust = 60 #°C
+        T_exhaust = 120 #°C
     if p3_hp == -1.:
         p3_hp =100#bar
     p4 = arg_in.p4;
@@ -121,16 +129,16 @@ def ST(ST_inputs):
 
     TpinchSub = arg_in.TpinchSub;
     if TpinchSub ==-1.:
-        TpinchSub = 10;#delta K
+        TpinchSub = 5;#delta K
     TpinchEx = arg_in.TpinchEx;
     if TpinchEx ==-1.:
-        TpinchEx = 10;#delta K
+        TpinchEx = 5;#delta K
     TpinchCond = arg_in.TpinchCond;
     if TpinchCond ==-1.:
         TpinchCond = 5;#delta K
     TpinchHR = arg_in.TpinchHR;
     if TpinchHR ==-1.:
-        TpinchHR = 50;#delta K
+        TpinchHR = 500;#delta K
 
     eta_SiC = arg_in.eta_SiC;
     if eta_SiC == -1.:
@@ -750,7 +758,7 @@ def ST(ST_inputs):
     """
     boiler_inputs = STboiler_arg.boiler_input(inversion=inversion, Lambda = comb.Lambda, T_out = comb.Tmax-273.15,
                                             T_exhaust =T_exhaust-273.15,TpinchHR = TpinchHR,T_ext = T_ext-273.15,
-                                            Q = Q_boiler)
+                                            Q = Q_boiler, T_boiler_cold = T2-273.15)
     boiler_outputs = boiler(boiler_inputs)
     ma,dummy,mc,mf = boiler_outputs.boiler_massflow[0:]
 
@@ -780,6 +788,7 @@ def ST(ST_inputs):
     e_boiler_out = boiler_outputs.e_boiler_out#kJ/kg_f aka e_ech
 
     eta_cyclex =Wm/Q_boiler_exergie
+    print("eta_cyclex",eta_cyclex)
     eta_rotex = Wm/Wm_max
 
     eta_combex = boiler_outputs.eta_combex

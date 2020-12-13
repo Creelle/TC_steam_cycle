@@ -87,8 +87,15 @@ def ST(ST_inputs):
 
     comb = arg_in.combustion
 
-    inversion = True  # on doit calculer Lambda a partir de Tmax
-    comb.Tmax = 273.15+1400;
+    if comb.Tmax ==-1.:
+        if comb.Lambda ==-1 :
+
+            inversion = True
+            comb.Tmax = 273.15+1400;
+        inversion = False
+
+    elif comb.Lambda == -1.:
+        inversion =True # on doit calculer Lambda a partir de Tmax
 
     if comb.x == -1:
         comb.x = 0;
@@ -535,7 +542,7 @@ def ST(ST_inputs):
             # print('here',T10, T10ia,T10ia_IP)
             # print(steamTable.tsat_p(p10)+273.15,steamTable.tsat_p(p11)+273.15)
             #print(T2,T3)
-            print("evolution",T10-273.15,T101-273.15,T10i-273.15,T71-273.15,T11-273.15,T10i_IP-273.15)
+            #print("evolution",T10-273.15,T101-273.15,T10i-273.15,T71-273.15,T11-273.15,T10i_IP-273.15)
 
 
             #set1
@@ -581,9 +588,9 @@ def ST(ST_inputs):
                 Functions = np.append(Functions,Fdrum)
                 #print(Functions)
             return Functions
-        print('au drum', "T6_IP",T6_IP-273.15,"T10n",T10i[-1]-273.15,"T8i_IP[0]",T8i_IP[0]-273.15,'T71',T71-273.15)
+        #print('au drum', "T6_IP",T6_IP-273.15,"T10n",T10i[-1]-273.15,"T8i_IP[0]",T8i_IP[0]-273.15,'T71',T71-273.15)
         #premiere estimation de T81
-        print('here',steamTable.tsat_p(5.1))
+        #print('here',steamTable.tsat_p(5.1))
 
         def initial(nsout,nsout_IP):
 
@@ -774,7 +781,7 @@ def ST(ST_inputs):
     """
     boiler_inputs = STboiler_arg.boiler_input(inversion=inversion, Lambda = comb.Lambda, T_out = comb.Tmax-273.15,
                                             T_exhaust =T_exhaust-273.15,TpinchHR = TpinchHR,T_ext = T_ext-273.15,
-                                            Q = Q_boiler)
+                                            Q = Q_boiler,T_boiler_cold = T2-273.15)
     boiler_outputs = boiler(boiler_inputs)
     ma,dummy,mc,mf = boiler_outputs.boiler_massflow[0:]
 

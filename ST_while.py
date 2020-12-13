@@ -5,10 +5,10 @@ import STboiler_arguments as STboiler_arg;
 from boiler import boiler
 import matplotlib.pyplot as plt
 from pyXSteam.XSteam import XSteam # see documentation here: https://pypi.org/project/pyXSteam/
-plt.rcParams.update({'font.size': 16})
+plt.rcParams.update({'font.size': 20})
 
 
-import ST_drum1 as drum
+import ST_drum2 as drum
 
 def psychrometrics(Tdb,absolute_humidity):
     """
@@ -79,10 +79,10 @@ def ST(ST_inputs):
         Pe = 250e3;#250 kWe
     nsout = arg_in.nsout;
     if nsout ==-1.:
-        nsout = 6;#15°C
+        nsout = 0;#15°C
     reheat = arg_in.reheat
     if reheat == -1:
-        reheat = 3;# Number of reheating
+        reheat = 0;# Number of reheating
     T_max = arg_in.T_max;
     if T_max == -1.:
         T_max = 520 #°C
@@ -139,7 +139,7 @@ def ST(ST_inputs):
         TpinchCond = 5;#delta K
     TpinchHR = arg_in.TpinchHR;
     if TpinchHR ==-1.:
-        TpinchHR = 500;#delta K
+        TpinchHR = 30;#delta K
 
     eta_SiC = arg_in.eta_SiC;
     if eta_SiC == -1.:
@@ -709,133 +709,151 @@ def ST(ST_inputs):
     outputs.combustion.fum =np.array([boiler_outputs.m_O2f,boiler_outputs.m_N2f,boiler_outputs.m_CO2f,boiler_outputs.m_H2Of])*mf
 
     #heat recovery
-    outputs.HR.T_hot_in = boiler_outputs.T_hot_in
-    outputs.HR.T_hot_out = boiler_outputs.T_hot_out
-    outputs.HR.T_cold_in = boiler_outputs.T_cold_in
-    outputs.HR.T_cold_out = boiler_outputs.T_cold_out
-    outputs.HR.T_dew = boiler_outputs.T_dew
+    # outputs.HR.T_hot_in = boiler_outputs.T_hot_in
+    # outputs.HR.T_hot_out = boiler_outputs.T_hot_out
+    # outputs.HR.T_cold_in = boiler_outputs.T_cold_in
+    # outputs.HR.T_cold_out = boiler_outputs.T_cold_out
+    # outputs.HR.T_dew = boiler_outputs.T_dew
 
-    """
-    18) Pie charts
-    """
-    # pie chart of the energie flux in the cycle
-    fig,ax =  plt.subplots(figsize=(6, 3), subplot_kw=dict(aspect="equal"))
-    data = [Pe,Pf_mec,P_cond,P_chimney]
-    labels = ['Useful power {v} [MW]'.format(v=round(Pe/1000)),'Mechanical losses {v} [MW]'.format(v=round(Pf_mec/1000)),'Condensor losses {v} [MW]'.format(v=round(P_cond/1000)),'Chimney losses {v} [MW]'.format(v=round(P_chimney/1000))]
-
-    ax.pie(data,labels = labels,autopct='%1.2f%%',startangle = 90)
-    ax.set_title("Primary energetic flux "+ str(round(P_prim/1000)) + "[MW]")
-
-    # pie chart of the exergie flux in the cycle
-    fig2,ax =  plt.subplots(figsize=(6, 3), subplot_kw=dict(aspect="equal"))
-    data = [Pe,Pf_mec,L_turbine+L_pump,L_cond,L_exchanger_soutex,L_boiler,L_HR,L_comb,L_exhaust]
-    labels = ['Useful power {v} [MW]'.format(v=round(Pe/1000)),'Mechanical losses {v} [MW]'.format(v=round(Pf_mec/1000)),' \n \n Turbine and \n pump losses {v} [MW]'.format(v=round((L_turbine+L_pump)/1000)),
-              '\n \n \n Condenser losses {v} [MW]'.format(v=round(L_cond/1000)),'\n \n \n \n Feed heating losses {v} [MW]'.format(v=round(L_exchanger_soutex/1000)),
-              'Boiler losses {v} [MW]'.format(v=round(L_boiler/1000)),'Heat recovery losses {v} [MW]'.format(v=round(L_HR/1000)),
-              'Combustion losses {v} [MW]'.format(v=round(L_comb/1000)),'Chimney losses {v} [MW]'.format(v=round(L_exhaust/1000))]
-    plt.savefig('figures/energie_pie.png')
-
-    ax.pie(data,labels = labels,autopct="%1.2f%%",startangle = 90)
-    ax.set_title("Primary exergetic flux "+ str(round(ec*mc/1000)) + "[MW]")
-    plt.savefig('figures/exergie_pie.png')
-
-    """
-    19) Cycle graphs
-    """
-
-    #tracer la cloche
-
-    T= np.linspace(5,373,1000)
-    S_L=np.zeros(len(T))
-    S_V = np.zeros(len(T))
-    for i in range(len(T)):
-        S_L[i]=steamTable.sL_t(T[i])
-        S_V[i]=steamTable.sV_t(T[i])
-    ax3.plot(S_L,T,'-r')
-    ax3.plot(S_V,T,'-r')
-    ax3.plot([S_L[-1],S_V[-1]],[T[-1],T[-1]],'-r')
-
-    T72 = np.linspace(T7-273.15,T2-273.15,100)
-    S72 = np.linspace(s7,s2,100)
-
-    T2p = steamTable.tsat_p(p2)  ; S2p = steamTable.sL_p(p2) #°C,kJ/kg
-    T2pp =  T2p ; S2pp = steamTable.sV_p(p2)
-    T2p2pp = np.linspace(T2p,T2pp,100)
-    S2p2pp = np.linspace(S2p,S2pp,100)
-
-    S22p = np.linspace(s2,S2p,100)
-    T22p = np.zeros(len(S22p))
-    for i in range(0,len(S22p)):
-        T22p[i] = steamTable.t_ps(p2,S22p[i])
-
-    T2pp3 = np.linspace(T2pp,T3-273.15,100)+1
-    S2pp3 = np.zeros(len(T2pp3))
-    for i in range(0,len(T2pp3)):
-        S2pp3[i] = steamTable.s_pt(p3,T2pp3[i])
-
-    p36 = np.linspace(p_pre,p6,100)
-    S3p = np.linspace(s_pre,s_pre,100)
-    T36 = np.zeros(len(p36))
-    S36 = np.zeros(len(p36))
-    h36s = np.zeros(len(p36))
-    h36 = np.zeros(len(p36))
-    for i in range(0,len(p36)):
-        h36s[i] = steamTable.h_ps(p36[i],s_pre)
-        h36[i] = h_pre-(h_pre-h36s[i])*eta_SiT
-        T36[i] = steamTable.t_ph(p36[i],h36[i])
-        S36[i] = steamTable.s_ph(p36[i],h36[i])
-
-    T67 = np.linspace(T36[-1],T7-273.15,100)
-    S67 = np.linspace(S36[-1],s7,100)
-
-    ax3.plot([s7,s10],[T7-273.15,T10-273.15])
-
-    T110 =np.linspace(T10-273.15,T1-273.15,100)
-    S110 = np.zeros(100)
-    for i in range(len(T110)):
-        S110[i]=steamTable.s_pt(p10,T110[i])
-    ax3.plot(S110,T110,'-b')
-    #alimentation pump
-
-    ax3.plot([s1,s2],[T1-273.15,T2-273.15])
-
-
-    ax3.plot(S22p,T22p,'g',S2p2pp,T2p2pp,'g',S2pp3,T2pp3,'g',S36,T36,'g',S67,T67,'g')
-    ax3.set_xlabel('Entropy [kJ/kg/K]')
-    ax3.set_ylabel('Temperature [°C]')
-    ax3.grid(True)
-    #ax3.set_title('T S graph of the steam turbine cycle')
-    #ax3.legend()
-
-
-    fig = [fig,fig2,fig3]
-    outputs.fig = fig
-    if (ST_inputs.DISPLAY == 1):
-        plt.show()
+    # """
+    # 18) Pie charts
+    # """
+    # # pie chart of the energie flux in the cycle
+    # fig,ax =  plt.subplots(figsize=(6, 3), subplot_kw=dict(aspect="equal"))
+    # data = [Pe,Pf_mec,P_cond,P_chimney]
+    # labels = ['Useful power {v} [MW]'.format(v=round(Pe/1000)),'Mechanical losses {v} [MW]'.format(v=round(Pf_mec/1000)),'Condensor losses {v} [MW]'.format(v=round(P_cond/1000)),'Chimney losses {v} [MW]'.format(v=round(P_chimney/1000))]
+    #
+    # ax.pie(data,labels = labels,autopct='%1.2f%%',startangle = 90)
+    # ax.set_title("Primary energetic flux "+ str(round(P_prim/1000)) + "[MW]")
+    #
+    # # pie chart of the exergie flux in the cycle
+    # fig2,ax =  plt.subplots(figsize=(6, 3), subplot_kw=dict(aspect="equal"))
+    # data = [Pe,Pf_mec,L_turbine+L_pump,L_cond,L_exchanger_soutex,L_boiler,L_HR,L_comb,L_exhaust]
+    # labels = ['Useful power {v} [MW]'.format(v=round(Pe/1000)),'Mechanical losses {v} [MW]'.format(v=round(Pf_mec/1000)),' \n \n Turbine and \n pump losses {v} [MW]'.format(v=round((L_turbine+L_pump)/1000)),
+    #           '\n \n \n Condenser losses {v} [MW]'.format(v=round(L_cond/1000)),'\n \n \n \n Feed heating losses {v} [MW]'.format(v=round(L_exchanger_soutex/1000)),
+    #           'Boiler losses {v} [MW]'.format(v=round(L_boiler/1000)),'Heat recovery losses {v} [MW]'.format(v=round(L_HR/1000)),
+    #           'Combustion losses {v} [MW]'.format(v=round(L_comb/1000)),'Chimney losses {v} [MW]'.format(v=round(L_exhaust/1000))]
+    # plt.savefig('figures/energie_pie.png')
+    #
+    # ax.pie(data,labels = labels,autopct="%1.2f%%",startangle = 90)
+    # ax.set_title("Primary exergetic flux "+ str(round(ec*mc/1000)) + "[MW]")
+    # plt.savefig('figures/exergie_pie.png')
+    #
+    # """
+    # 19) Cycle graphs
+    # """
+    #
+    # #tracer la cloche
+    #
+    # T= np.linspace(5,373,1000)
+    # S_L=np.zeros(len(T))
+    # S_V = np.zeros(len(T))
+    # for i in range(len(T)):
+    #     S_L[i]=steamTable.sL_t(T[i])
+    #     S_V[i]=steamTable.sV_t(T[i])
+    # ax3.plot(S_L,T,'-r')
+    # ax3.plot(S_V,T,'-r')
+    # ax3.plot([S_L[-1],S_V[-1]],[T[-1],T[-1]],'-r')
+    #
+    # T72 = np.linspace(T7-273.15,T2-273.15,100)
+    # S72 = np.linspace(s7,s2,100)
+    #
+    # T2p = steamTable.tsat_p(p2)  ; S2p = steamTable.sL_p(p2) #°C,kJ/kg
+    # T2pp =  T2p ; S2pp = steamTable.sV_p(p2)
+    # T2p2pp = np.linspace(T2p,T2pp,100)
+    # S2p2pp = np.linspace(S2p,S2pp,100)
+    #
+    # S22p = np.linspace(s2,S2p,100)
+    # T22p = np.zeros(len(S22p))
+    # for i in range(0,len(S22p)):
+    #     T22p[i] = steamTable.t_ps(p2,S22p[i])
+    #
+    # T2pp3 = np.linspace(T2pp,T3-273.15,100)+1
+    # S2pp3 = np.zeros(len(T2pp3))
+    # for i in range(0,len(T2pp3)):
+    #     S2pp3[i] = steamTable.s_pt(p3,T2pp3[i])
+    #
+    # p36 = np.linspace(p_pre,p6,100)
+    # S3p = np.linspace(s_pre,s_pre,100)
+    # T36 = np.zeros(len(p36))
+    # S36 = np.zeros(len(p36))
+    # h36s = np.zeros(len(p36))
+    # h36 = np.zeros(len(p36))
+    # for i in range(0,len(p36)):
+    #     h36s[i] = steamTable.h_ps(p36[i],s_pre)
+    #     h36[i] = h_pre-(h_pre-h36s[i])*eta_SiT
+    #     T36[i] = steamTable.t_ph(p36[i],h36[i])
+    #     S36[i] = steamTable.s_ph(p36[i],h36[i])
+    #
+    # T67 = np.linspace(T36[-1],T7-273.15,100)
+    # S67 = np.linspace(S36[-1],s7,100)
+    #
+    # ax3.plot([s7,s10],[T7-273.15,T10-273.15])
+    #
+    # T110 =np.linspace(T10-273.15,T1-273.15,100)
+    # S110 = np.zeros(100)
+    # for i in range(len(T110)):
+    #     S110[i]=steamTable.s_pt(p10,T110[i])
+    # ax3.plot(S110,T110,'-b')
+    # #alimentation pump
+    #
+    # ax3.plot([s1,s2],[T1-273.15,T2-273.15])
+    #
+    #
+    # ax3.plot(S22p,T22p,'g',S2p2pp,T2p2pp,'g',S2pp3,T2pp3,'g',S36,T36,'g',S67,T67,'g')
+    # ax3.set_xlabel('Entropy [kJ/kg/K]')
+    # ax3.set_ylabel('Temperature [°C]')
+    # ax3.grid(True)
+    # #ax3.set_title('T S graph of the steam turbine cycle')
+    # #ax3.legend()
+    #
+    #
+    # fig = [fig,fig2,fig3]
+    # outputs.fig = fig
+    # if (ST_inputs.DISPLAY == 1):
+    #     plt.show()
 
 
     return outputs;
+Tmaxis = np.arange(700,1410,50)
+eta_gexes = np.zeros(len(Tmaxis))
+fuel_consump = np.zeros(len(Tmaxis))
+for i in range(len(Tmaxis)):
+    ST_inputs = ST_arg.ST_inputs();
+    ST_inputs.Pe = 250.0e3 #[kW]
+    ST_inputs.DISPLAY = 0
+    ST_inputs.nsout = 8
+    ST_inputs.reheat = 3
+    ST_inputs.TpinchEx = 9
+    ST_inputs.TpinchSub = 10
+    ST_inputs.p3_hp=100
+    ST_inputs.p4 = 30
+    ST_inputs.Tdrum = 120
+    ST_inputs.drumFlag = 1
+    ST_inputs.T_exhaust= 40
+    ST_inputs.TpinchHR = 100
+    #T_hot_in = T_2+TpinchHR > T_exhaust> Tdew
+    ST_inputs.combustion.Tmax = Tmaxis[i]
+    answers = ST(ST_inputs);
+    # print(answers.Xmassflow)
+    # print(answers.massflow[2])
+    # print('eta_cyclex',answers.eta[2])
+    # print('eta_gex',answers.eta[5])
+    #print("Lambda",answers.combustion.Lambda)
+    #print('HR',answers.HR.T_hot_in,answers.HR.T_hot_out,answers.HR.T_cold_in,answers.HR.T_cold_out,answers.HR.T_dew)
+    eta_gexes[i] = answers.eta[5]
+    fuel_consump[i]= answers.massflow[2]
+fig4,ax4 = plt.subplots()
+ax4.plot(Tmaxis,eta_gexes,'-b')
+ax4.set_xlabel('Tmax [°C]')
+ax4.set_ylabel('$\eta_{gex}$')
+ax4.grid(True)
 
-
-ST_inputs = ST_arg.ST_inputs();
-ST_inputs.Pe = 250.0e3 #[kW]
-ST_inputs.DISPLAY = 1
-ST_inputs.nsout = 0
-ST_inputs.reheat = 3
-ST_inputs.TpinchEx = 9
-ST_inputs.TpinchSub = 10
-ST_inputs.p3_hp=100
-ST_inputs.p4 = 30
-ST_inputs.Tdrum = 120
-ST_inputs.drumFlag = 0
-ST_inputs.T_exhaust= 120
-ST_inputs.TpinchHR = 500
-#T_hot_in = T_2+TpinchHR > T_exhaust> Tdew
-ST_inputs.combustion.Tmax = 1400
-answers = ST(ST_inputs);
-print(answers.Xmassflow)
-print(answers.massflow[2])
-print('eta_cyclex',answers.eta[2])
-print('eta_gex',answers.eta[5])
-print("Lambda",answers.combustion.Lambda)
-print('HR',answers.HR.T_hot_in,answers.HR.T_hot_out,answers.HR.T_cold_in,answers.HR.T_cold_out,answers.HR.T_dew)
+fig4,ax4 = plt.subplots()
+ax4.plot(Tmaxis,fuel_consump,'-b')
+ax4.set_xlabel('Tmax[°C]')
+ax4.set_ylabel('$\dot{m}_{fuel}$ [kg/s]')
+ax4.grid(True)
+#ax3.set_title('T S graph of the steam turbine cycle')
+#ax3.legend()
+plt.show()

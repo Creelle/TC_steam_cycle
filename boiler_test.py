@@ -38,7 +38,6 @@ def boiler(STboiler_input):
     T_dew =psychrometrics(Tdb,absolute_humidity)+273.15#K
 
     T_exhaust = arg_in.T_exhaust+273.15
-    T_boiler_cold = arg_in.T_boiler_cold+273.15
 
     #Combustion
     Lambda = arg_in.Lambda
@@ -100,10 +99,10 @@ def boiler(STboiler_input):
         dt = 0.1
         iter = 1
         error = 1
-        #print(T0,T_in,'here')
+
         h_f0 =  useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T0-15,T0,dt)
         #on neglige hc
-        ha = useful.janaf_integrate_air(useful.cp_air,mass_conc0,Mm_a,T0-15,T_in,0.1) #attention useful.cp_air [J/kg_air] #basically h_in=ha
+        ha = useful.janaf_integrate_air(useful.cp_air,mass_conc0,Mm_a,T0-15,T_in,0.01) #attention useful.cp_air [J/kg_air] #basically h_in=ha
 
         if (inversion == False):
             T_out = 1273.15 #[K] first estimation
@@ -137,8 +136,7 @@ def boiler(STboiler_input):
         """
         2) Determine massflows
         """
-        T_hot_in = T_boiler_cold+TpinchHR
-        massflow_f = Q*1000/useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T_hot_in,T_out,dt) #kg_f/kg_vapor
+        massflow_f = Q*1000/useful.janaf_integrate_air(useful.cp_air,mass_conc,Mm_af,T_in+TpinchHR,T_out,dt) #kg_f/kg_vapor
         massflow_a = massflow_f/(1+1/(Lambda*ma1))
         massflow_c = massflow_f-massflow_a #kg/s
         #print('massflow_c',massflow_c)
@@ -147,19 +145,17 @@ def boiler(STboiler_input):
         3) From the massflow, calculate a new T_in
         """
 
-        Cp_f = useful.cp_mean_air(useful.cp_air,mass_conc,Mm_af,T_exhaust,T_hot_in,dt)
+        Cp_f = useful.cp_mean_air(useful.cp_air,mass_conc,Mm_af,T_exhaust,T_in+TpinchHR,dt)
         Cp_a = useful.cp_mean_air(useful.cp_air,mass_conc0,Mm_a,T_ext,T_in,dt)
-        #T_in_new = (massflow_f*Cp_f*T_exhaust-massflow_f*Cp_f*TpinchHR-massflow_a*Cp_a*T_ext)/(massflow_f*Cp_f-massflow_a*Cp_a)
-        T_in_new = massflow_f*Cp_f/(massflow_a*Cp_a)*(-T_exhaust+T_hot_in)+T_ext
+        T_in_new = (massflow_f*Cp_f*T_exhaust-massflow_f*Cp_f*TpinchHR-massflow_a*Cp_a*T_ext)/(massflow_f*Cp_f-massflow_a*Cp_a)
         error2 = abs(T_in-T_in_new)
         iter2+=1
         if iter2 ==100:
             print("Max iteration occured, there may have been no convergence")
-        #print('T_ext,T_in,T_out,T_hot_in,T_exhaust',T_ext,T_in,T_out,T_hot_in,T_exhaust)
         T_in = T_in_new
 
 
-    T_hot_in = T_boiler_cold+TpinchHR
+    T_hot_in = T_in+TpinchHR
 
     """
     4)  calcul des puissances
@@ -174,7 +170,6 @@ def boiler(STboiler_input):
     """
     CH4=useful.CH4
     ec = HHV- T0*(CH4.S(273.15)/0.016/1000 ) #kJ/kg_c
-    #print('comparison,',ec,HHV)
 
     s_air_ext = useful.janaf_integrate_air(useful.cp_air_T,mass_conc0,Mm_a,T0,T_ext,dt)
     hair_ext = useful.janaf_integrate_air(useful.cp_air,mass_conc0,Mm_a,T0,T_ext,dt)/1000
@@ -243,12 +238,12 @@ def boiler(STboiler_input):
     outputs.e_boiler_out = e_f_out #kJ/kg_f
 
     outputs.boiler_massflow[0:]= [massflow_a,0,massflow_c,massflow_f]
-    #print('boiler temperature',T_out,T_hot_in)
+    print('boiler temperature',T_out,T_hot_in)
 
 
     return outputs
 
 # results = boiler(STboiler_arg.boiler_input(inversion=True))
-# print(results.Lambda,'yeo')
+# print(results.Lambda)
 # results2 = boiler(STboiler_arg.boiler_input(inversion=False,Lambda = results.Lambda))
-# print(results2.T_out,'fhuh')
+# print(results2.T_out)
