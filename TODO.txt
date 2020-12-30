@@ -47,3 +47,4 @@ Montrer les graphe qu on a fait ==> GWENAEL
 6) Remarques:
 - pas de pertes de charge  dans le boiler
 -CH4 dans le boiler
+fetch and push
